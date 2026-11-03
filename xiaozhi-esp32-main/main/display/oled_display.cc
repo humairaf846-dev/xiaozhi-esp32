@@ -5,9 +5,11 @@
 #include "settings.h"
 
 #include <algorithm>
+#include <cstring>
 #include <string>
 
 #include <esp_err.h>
+#include <esp_random.h>
 #include <esp_log.h>
 #include <esp_lvgl_port.h>
 #include <material_symbols.h>
@@ -100,9 +102,16 @@ void OledDisplay::SetupUI() {
     } else {
         SetupUI_128x32();
     }
+    SetupEyes();
 }
 
 OledDisplay::~OledDisplay() {
+    if (blink_timer_ != nullptr) {
+        lv_timer_delete(blink_timer_);
+    }
+    if (eyes_layer_ != nullptr) {
+        lv_obj_del(eyes_layer_);
+    }
     if (content_ != nullptr) {
         lv_obj_del(content_);
     }
@@ -410,7 +419,320 @@ void OledDisplay::SetupUI_128x32() {
                                    LV_PART_MAIN);
 }
 
+// ---------------------------------------------------------------------------
+// Robot eyes
+// ---------------------------------------------------------------------------
+
+namespace {
+
+enum EyeExpression {
+    kEyeNeutral = 0,
+    kEyeHappy,
+    kEyeWink,
+    kEyeSad,
+    kEyeAngry,
+    kEyeSurprised,
+    kEyeThinking,
+    kEyeConfused,
+    kEyeEmbarrassed,
+    kEyeCool,
+    kEyeSleepy,
+};
+
+enum EyeKind { kEyeKindRect, kEyeKindArc, kEyeKindClosed };
+enum LidKind { kLidNone, kLidAngry, kLidSad };
+
+struct EyeShape {
+    EyeKind kind;
+    float width_scale;
+    float height_scale;
+    int dx;
+    int dy;
+    bool circle;
+    LidKind lid;
+};
+
+struct EyeExpressionDef {
+    EyeShape eye[2];  // [0] = left eye, [1] = right eye
+};
+
+// dx/dy are in units of 1/16 of the base eye height so they scale with the screen.
+const EyeExpressionDef kEyeExpressions[] = {
+    // kEyeNeutral
+    {{{kEyeKindRect, 1.0f, 1.0f, 0, 0, false, kLidNone},
+      {kEyeKindRect, 1.0f, 1.0f, 0, 0, false, kLidNone}}},
+    // kEyeHappy
+    {{{kEyeKindArc, 1.0f, 1.0f, 0, 0, false, kLidNone},
+      {kEyeKindArc, 1.0f, 1.0f, 0, 0, false, kLidNone}}},
+    // kEyeWink
+    {{{kEyeKindRect, 1.0f, 1.0f, 0, 0, false, kLidNone},
+      {kEyeKindArc, 1.0f, 1.0f, 0, 0, false, kLidNone}}},
+    // kEyeSad
+    {{{kEyeKindRect, 1.0f, 0.9f, 0, 1, false, kLidSad},
+      {kEyeKindRect, 1.0f, 0.9f, 0, 1, false, kLidSad}}},
+    // kEyeAngry
+    {{{kEyeKindRect, 1.0f, 1.0f, 0, 0, false, kLidAngry},
+      {kEyeKindRect, 1.0f, 1.0f, 0, 0, false, kLidAngry}}},
+    // kEyeSurprised
+    {{{kEyeKindRect, 0.0f, 1.0f, 0, 0, true, kLidNone},
+      {kEyeKindRect, 0.0f, 1.0f, 0, 0, true, kLidNone}}},
+    // kEyeThinking (looking up and to the side)
+    {{{kEyeKindRect, 0.8f, 0.7f, 4, -3, false, kLidNone},
+      {kEyeKindRect, 0.8f, 0.7f, 4, -3, false, kLidNone}}},
+    // kEyeConfused
+    {{{kEyeKindRect, 0.9f, 0.55f, 0, 2, false, kLidNone},
+      {kEyeKindRect, 1.0f, 1.05f, 0, 0, false, kLidNone}}},
+    // kEyeEmbarrassed (looking down)
+    {{{kEyeKindRect, 0.9f, 0.6f, -2, 4, false, kLidNone},
+      {kEyeKindRect, 0.9f, 0.6f, -2, 4, false, kLidNone}}},
+    // kEyeCool (half-closed, relaxed)
+    {{{kEyeKindRect, 1.0f, 0.5f, 0, 4, false, kLidNone},
+      {kEyeKindRect, 1.0f, 0.5f, 0, 4, false, kLidNone}}},
+    // kEyeSleepy
+    {{{kEyeKindClosed, 1.0f, 1.0f, 0, 3, false, kLidNone},
+      {kEyeKindClosed, 1.0f, 1.0f, 0, 3, false, kLidNone}}},
+};
+
+struct EmotionToEye {
+    const char* name;
+    EyeExpression expression;
+};
+
+const EmotionToEye kEmotionToEye[] = {
+    {"neutral", kEyeNeutral},         {"staticstate", kEyeNeutral},
+    {"happy", kEyeHappy},             {"laughing", kEyeHappy},
+    {"funny", kEyeHappy},             {"loving", kEyeHappy},
+    {"delicious", kEyeHappy},         {"kissy", kEyeHappy},
+    {"silly", kEyeHappy},             {"relaxed", kEyeHappy},
+    {"confident", kEyeHappy},         {"winking", kEyeWink},
+    {"sad", kEyeSad},                 {"crying", kEyeSad},
+    {"angry", kEyeAngry},             {"surprised", kEyeSurprised},
+    {"shocked", kEyeSurprised},       {"thinking", kEyeThinking},
+    {"confused", kEyeConfused},       {"embarrassed", kEyeEmbarrassed},
+    {"cool", kEyeCool},               {"sleepy", kEyeSleepy},
+};
+
+int LookupEyeExpression(const char* emotion) {
+    if (emotion == nullptr) {
+        return -1;
+    }
+    for (const auto& entry : kEmotionToEye) {
+        if (strcmp(entry.name, emotion) == 0) {
+            return entry.expression;
+        }
+    }
+    return -1;
+}
+
+}  // namespace
+
+void OledDisplay::SetupEyes() {
+    DisplayLockGuard lock(this);
+
+    auto screen = lv_screen_active();
+    // Use the same "lit" and "off" colors as the rest of the OLED UI.
+    lv_color_t bg_color = lv_obj_get_style_bg_color(screen, LV_PART_MAIN);
+    lv_color_t fg_color = lv_obj_get_style_text_color(screen, LV_PART_MAIN);
+
+    eyes_layer_ = lv_obj_create(screen);
+    lv_obj_set_size(eyes_layer_, width_, height_);
+    lv_obj_set_pos(eyes_layer_, 0, 0);
+    lv_obj_set_style_pad_all(eyes_layer_, 0, 0);
+    lv_obj_set_style_border_width(eyes_layer_, 0, 0);
+    lv_obj_set_style_radius(eyes_layer_, 0, 0);
+    lv_obj_set_style_bg_color(eyes_layer_, bg_color, 0);
+    lv_obj_set_style_bg_opa(eyes_layer_, LV_OPA_COVER, 0);
+    lv_obj_set_scrollbar_mode(eyes_layer_, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_remove_flag(eyes_layer_, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_remove_flag(eyes_layer_, LV_OBJ_FLAG_CLICKABLE);
+
+    int arc_width = height_ >= 64 ? 6 : 4;
+    for (int i = 0; i < 2; i++) {
+        eye_rect_[i] = lv_obj_create(eyes_layer_);
+        lv_obj_set_style_border_width(eye_rect_[i], 0, 0);
+        lv_obj_set_style_pad_all(eye_rect_[i], 0, 0);
+        lv_obj_set_style_bg_color(eye_rect_[i], fg_color, 0);
+        lv_obj_set_style_bg_opa(eye_rect_[i], LV_OPA_COVER, 0);
+        lv_obj_remove_flag(eye_rect_[i], LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_remove_flag(eye_rect_[i], LV_OBJ_FLAG_CLICKABLE);
+
+        eye_arc_[i] = lv_arc_create(eyes_layer_);
+        lv_obj_remove_style(eye_arc_[i], nullptr, LV_PART_KNOB);
+        lv_obj_remove_flag(eye_arc_[i], LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_set_style_pad_all(eye_arc_[i], 0, LV_PART_MAIN);
+        lv_obj_set_style_pad_all(eye_arc_[i], 0, LV_PART_INDICATOR);
+        lv_obj_set_style_bg_opa(eye_arc_[i], LV_OPA_TRANSP, 0);
+        lv_obj_set_style_arc_opa(eye_arc_[i], LV_OPA_TRANSP, LV_PART_MAIN);
+        lv_obj_set_style_arc_width(eye_arc_[i], arc_width, LV_PART_INDICATOR);
+        lv_obj_set_style_arc_color(eye_arc_[i], fg_color, LV_PART_INDICATOR);
+        lv_obj_set_style_arc_rounded(eye_arc_[i], true, LV_PART_INDICATOR);
+        lv_arc_set_bg_angles(eye_arc_[i], 180, 360);
+        lv_arc_set_angles(eye_arc_[i], 180, 360);
+        lv_obj_add_flag(eye_arc_[i], LV_OBJ_FLAG_HIDDEN);
+
+        // A thick line in the background color, drawn over the eye, acts as a slanted eyelid.
+        eye_lid_[i] = lv_line_create(eyes_layer_);
+        lv_obj_set_style_line_color(eye_lid_[i], bg_color, 0);
+        lv_obj_add_flag(eye_lid_[i], LV_OBJ_FLAG_HIDDEN);
+    }
+
+    ApplyEyeExpression(kEyeNeutral);
+    // Hidden until the first eye emotion arrives, so the boot/status text stays readable.
+    lv_obj_add_flag(eyes_layer_, LV_OBJ_FLAG_HIDDEN);
+    // Keep the low battery warning above the eyes.
+    if (low_battery_popup_ != nullptr) {
+        lv_obj_move_foreground(low_battery_popup_);
+    }
+
+    blink_timer_ = lv_timer_create(BlinkTimerCallback, 100, this);
+}
+
+void OledDisplay::ApplyEyeExpression(int expression, bool blink) {
+    if (eyes_layer_ == nullptr || expression < 0 ||
+        expression >= static_cast<int>(sizeof(kEyeExpressions) / sizeof(kEyeExpressions[0]))) {
+        return;
+    }
+    current_eye_expression_ = expression;
+    const auto& def = kEyeExpressions[expression];
+
+    const bool large = height_ >= 64;
+    const int base_w = large ? 36 : 28;
+    const int base_h = large ? 40 : 22;
+    const int gap = large ? 24 : 20;
+    const int radius = large ? 10 : 6;
+    const int cy = height_ / 2;
+    const int lid_offset = 20;  // keeps lid line points positive; see lv_obj_set_pos below
+
+    for (int i = 0; i < 2; i++) {
+        const auto& shape = def.eye[i];
+        const int base_cx = (i == 0) ? width_ / 2 - gap / 2 - base_w / 2
+                                     : width_ / 2 + gap / 2 + base_w / 2;
+        const int cx = base_cx + shape.dx * base_h / 16;
+        const int ecy = cy + shape.dy * base_h / 16;
+
+        lv_obj_add_flag(eye_lid_[i], LV_OBJ_FLAG_HIDDEN);
+
+        if (shape.kind == kEyeKindArc) {
+            lv_obj_add_flag(eye_rect_[i], LV_OBJ_FLAG_HIDDEN);
+            lv_obj_remove_flag(eye_arc_[i], LV_OBJ_FLAG_HIDDEN);
+            const int d = base_w;
+            lv_obj_set_size(eye_arc_[i], d, d);
+            lv_obj_set_pos(eye_arc_[i], cx - d / 2, ecy - d / 4);
+            continue;
+        }
+
+        lv_obj_add_flag(eye_arc_[i], LV_OBJ_FLAG_HIDDEN);
+        lv_obj_remove_flag(eye_rect_[i], LV_OBJ_FLAG_HIDDEN);
+
+        int w;
+        int h;
+        int r;
+        if (shape.kind == kEyeKindClosed) {
+            w = base_w;
+            h = large ? 4 : 3;
+            r = 1;
+        } else if (shape.circle) {
+            h = static_cast<int>(base_h * shape.height_scale);
+            w = h;
+            r = LV_RADIUS_CIRCLE;
+        } else {
+            w = static_cast<int>(base_w * shape.width_scale);
+            h = static_cast<int>(base_h * shape.height_scale);
+            r = std::min(radius, h / 2);
+        }
+        if (blink && shape.kind == kEyeKindRect) {
+            h = large ? 4 : 2;
+            r = 1;
+        }
+        const int x0 = cx - w / 2;
+        const int y0 = ecy - h / 2;
+        lv_obj_set_style_radius(eye_rect_[i], r, 0);
+        lv_obj_set_size(eye_rect_[i], w, h);
+        lv_obj_set_pos(eye_rect_[i], x0, y0);
+
+        if (shape.lid != kLidNone && !blink) {
+            const int x1 = x0 + w;
+            const int outer_x = (i == 0) ? x0 - 3 : x1 + 3;
+            const int inner_x = (i == 0) ? x1 + 3 : x0 - 3;
+            const int thickness = std::max(4, h * 7 / 10);
+            const int low_y = y0 + h / 2;
+            const int high_y = y0 - 1;
+            // Bottom edge of the lid runs from high_y to low_y; the line's centre sits above it.
+            int ax, ay, bx, by;
+            if (shape.lid == kLidAngry) {
+                ax = outer_x;
+                ay = high_y;
+                bx = inner_x;
+                by = low_y;
+            } else {
+                ax = inner_x;
+                ay = high_y;
+                bx = outer_x;
+                by = low_y;
+            }
+            eye_lid_points_[i][0] = {static_cast<lv_value_precise_t>(ax + lid_offset),
+                                     static_cast<lv_value_precise_t>(ay - thickness / 2 +
+                                                                     lid_offset)};
+            eye_lid_points_[i][1] = {static_cast<lv_value_precise_t>(bx + lid_offset),
+                                     static_cast<lv_value_precise_t>(by - thickness / 2 +
+                                                                     lid_offset)};
+            lv_obj_set_style_line_width(eye_lid_[i], thickness, 0);
+            lv_line_set_points(eye_lid_[i], eye_lid_points_[i], 2);
+            lv_obj_set_pos(eye_lid_[i], -lid_offset, -lid_offset);
+            lv_obj_move_foreground(eye_lid_[i]);
+            lv_obj_remove_flag(eye_lid_[i], LV_OBJ_FLAG_HIDDEN);
+        }
+    }
+}
+
+void OledDisplay::BlinkTimerCallback(lv_timer_t* timer) {
+    // Runs inside the LVGL task, which already holds the LVGL lock.
+    auto self = static_cast<OledDisplay*>(lv_timer_get_user_data(timer));
+    if (self->eyes_layer_ == nullptr || lv_obj_has_flag(self->eyes_layer_, LV_OBJ_FLAG_HIDDEN)) {
+        return;
+    }
+    if (--self->blink_countdown_ > 0) {
+        return;
+    }
+    if (self->blinking_) {
+        self->blinking_ = false;
+        self->ApplyEyeExpression(self->current_eye_expression_);
+        // Next blink in 2.5 - 5.5 seconds
+        self->blink_countdown_ = 25 + static_cast<int>(esp_random() % 30);
+    } else {
+        self->blinking_ = true;
+        self->ApplyEyeExpression(self->current_eye_expression_, true);
+        self->blink_countdown_ = 1;  // keep the eyes closed for ~100 ms
+    }
+}
+
 bool OledDisplay::SetEmotion(const char* emotion) {
+    int eye_expression = LookupEyeExpression(emotion);
+    // Names that are not facial emotions (e.g. "wifi", "link", "warning", "download") are
+    // status icons: show them with the normal UI so setup and error messages stay readable.
+    if (eye_expression < 0 && emotion != nullptr && material_symbols_get_utf8(emotion) == nullptr) {
+        // Unknown emotion name from the server: fall back to neutral eyes.
+        eye_expression = kEyeNeutral;
+    }
+    if (eye_expression >= 0) {
+        DisplayLockGuard lock(this);
+        if (eyes_layer_ == nullptr) {
+            return false;
+        }
+        blinking_ = false;
+        blink_countdown_ = 25 + static_cast<int>(esp_random() % 30);
+        ApplyEyeExpression(eye_expression);
+        lv_obj_remove_flag(eyes_layer_, LV_OBJ_FLAG_HIDDEN);
+        return true;
+    }
+
+    {
+        DisplayLockGuard lock(this);
+        if (eyes_layer_ != nullptr) {
+            lv_obj_add_flag(eyes_layer_, LV_OBJ_FLAG_HIDDEN);
+        }
+    }
+
     auto lvgl_theme = static_cast<LvglTheme*>(current_theme_);
     const char* utf8 = noto_emoji_get_utf8(emotion);
     const lv_font_t* emotion_font = lvgl_theme->emoji_font()->font();
