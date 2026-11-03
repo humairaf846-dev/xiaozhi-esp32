@@ -1,10 +1,12 @@
 #ifndef OLED_DISPLAY_H
 #define OLED_DISPLAY_H
 
+#include "eye_face.h"
 #include "lvgl_display.h"
 
 #include <esp_lcd_panel_io.h>
 #include <esp_lcd_panel_ops.h>
+#include <memory>
 
 class OledDisplay : public LvglDisplay {
 private:
@@ -22,19 +24,7 @@ private:
     lv_obj_t* chat_message_label_ = nullptr;
 
     // Full-screen robot eyes drawn in place of the emoji
-    lv_obj_t* eyes_layer_ = nullptr;
-    lv_obj_t* eye_rect_[2] = {nullptr, nullptr};
-    lv_obj_t* eye_arc_[2] = {nullptr, nullptr};
-    lv_obj_t* eye_lid_[2] = {nullptr, nullptr};
-    lv_point_precise_t eye_lid_points_[2][2] = {};
-    lv_timer_t* blink_timer_ = nullptr;
-    int current_eye_expression_ = 0;
-    int blink_countdown_ = 30;
-    bool blinking_ = false;
-
-    void SetupEyes();
-    void ApplyEyeExpression(int expression, bool blink = false);
-    static void BlinkTimerCallback(lv_timer_t* timer);
+    std::unique_ptr<EyeFace> eye_face_;
 
     virtual bool Lock(int timeout_ms = 0) override;
     virtual void Unlock() override;
