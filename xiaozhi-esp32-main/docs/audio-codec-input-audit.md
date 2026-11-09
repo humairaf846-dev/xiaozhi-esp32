@@ -1,91 +1,91 @@
-# AudioCodec 输入通道审计
+# AudioCodec Input Channel Audit
 
-审计日期：2026-09-29。修改前源码基线：`cf2024f`。逐板清单保留修改前的审计结果；本轮调整见下节。
+Audit date: 2026-09-29. Pre-change source baseline: `cf2024f`. The per-board list keeps the pre-change audit results; this round's adjustments are in the section below.
 
-## 本轮调整
+## This Round's Adjustments
 
-按单麦默认策略修改以下路径，保留 AFE 对多麦输入的支持：
+Applied the single-mic-by-default policy to the following paths, while keeping AFE's support for multi-mic input:
 
-| 板子 | 修改前 | 修改后默认 | 开发者实验接口 |
+| Board | Before | New default | Developer experimentation interface |
 |---|---|---|---|
-| Box Lite | MMR / MM | MR / M | `BoxAudioCodecLite` 新增末尾参数 `microphone_channels=1`；显式传 `2` 测试 MMR / MM，参考开关保持原有逻辑。 |
-| ESP32-S31-Korvo-1 | MM | M | 板级 `AUDIO_INPUT_CHANNELS` 默认为 `1`，改为 `2` 仍可测试 MM。没有参考，不应声明 MMR。 |
-| T-CameraPlus-S3 V1.0/V1.1 | 单声道采集，却声明 MR | M | 关闭错误的参考声明，与 RX 数据一致。V1.2 原本就是 M。 |
+| Box Lite | MMR / MM | MR / M | `BoxAudioCodecLite` gained a new trailing `microphone_channels=1` parameter; pass `2` explicitly to test MMR / MM, reference switch logic unchanged. |
+| ESP32-S31-Korvo-1 | MM | M | Board-level `AUDIO_INPUT_CHANNELS` now defaults to `1`; set it to `2` to still test MM. There is no reference, so MMR should not be declared. |
+| T-CameraPlus-S3 V1.0/V1.1 | Mono capture, yet declared MR | M | Turned off the incorrect reference declaration to match the RX data. V1.2 was already M. |
 
-其余 M / MR 路径保留。两款参考来源待核实的 LILYGO 板子仍需硬件确认。改动不能代替实机验证，也不表示已确认 Box Lite 的故障根因。
+All other M / MR paths are unchanged. The two LILYGO boards whose reference source still needs verification still require hardware confirmation. This change does not substitute for on-device verification, nor does it mean Box Lite's root cause has been confirmed.
 
-开发接口与验证要求见 [音频设计](../main/audio/README.md#board-input-layouts)。
+See [Audio Design](../main/audio/README.md#board-input-layouts) for the developer interface and verification requirements.
 
-## 修改前审计：范围与结论
+## Pre-Change Audit: Scope and Conclusion
 
-检查了 `main/audio/`、全部板级 codec、`GetAudioCodec()` 构造参数、自定义派生类，以及所有 `input_channels_` / `input_reference_` 赋值。覆盖 150 个带 `config.json` 的板级目录，另包括 `kevin/sp-v3-dev` 和 `lilygo/t-display-p4` 两个源码目录，共 152 个目录。一个目录可能有多个配置或硬件版本；本表不把目录数当成发布固件数量。
+Reviewed `main/audio/`, every board-level codec, `GetAudioCodec()` constructor arguments, custom subclasses, and every `input_channels_` / `input_reference_` assignment. Covers 150 board directories with a `config.json`, plus the two source directories `kevin/sp-v3-dev` and `lilygo/t-display-p4`, for 152 directories total. A directory may have multiple configurations or hardware revisions; this table does not treat the directory count as the number of shipped firmware builds.
 
-格式描述的是 codec 向音频引擎声明的数据语义；小资源芯片可能使用 LiteAudioEngine，并不实际创建 AFE。I2S slot 数、ADC 物理输入数与上层 mic 数不能混为一谈。`MR` 声明也不证明参考输入的接线、波形与时序经过实机验证。
+The format describes the data semantics a codec declares to the audio engine; resource-constrained chips may use LiteAudioEngine, which does not actually create an AFE. The number of I2S slots, the number of physical ADC inputs, and the number of mics seen by the upper layer are not the same thing. An `MR` declaration also does not prove that the reference input's wiring, waveform, and timing have been verified on real hardware.
 
-- `M`：一路麦克风，没有参考。可以正常唤醒和对话；不提供设备端 AEC 所需的参考。
-- `MR`：一路麦克风和一路播放参考。
-- `MM`：两路麦克风，没有参考。
-- `MMR`：两路麦克风和一路播放参考。
+- `M`: one microphone, no reference. Wake word and conversation work normally; does not provide the reference needed for on-device AEC.
+- `MR`: one microphone and one playback reference.
+- `MM`: two microphones, no reference.
+- `MMR`: two microphones and one playback reference.
 
-**不能把全部板子改为 MR。适合采用的单麦策略是：有有效参考时 MR，无参考时 M。** 已有绝大多数实现遵循这个通道数量策略，只有 Box Lite 与 ESP32-S31-Korvo-1 明确配置了双麦输入。
+**Not every board should be switched to MR. The single-mic policy to adopt is: MR when a valid reference exists, M when it does not.** Most existing implementations already follow this channel-count policy; only Box Lite and ESP32-S31-Korvo-1 explicitly configure dual-mic input.
 
-## 修改前审计：双麦配置
+## Pre-Change Audit: Dual-Mic Configurations
 
-| 板子 | 实现 | 当前格式 | 若决定统一单麦 |
+| Board | Implementation | Current format | If standardizing on single mic |
 |---|---|---|---|
-| ESP32-S3-Box-Lite | BoxAudioCodecLite | 音频处理开启时 MMR，否则 MM | `input_channels_ = input_reference_ ? 2 : 1`；当前 EnableInput/Read 随之调整为单麦采集与排列。需实机验证单通道采集、软件参考和通话。 |
-| ESP32-S31-Korvo-1 | Es8389AudioCodec | MM | 当前 `AUDIO_INPUT_CHANNELS=2` 且 `input_reference_=false`；单麦策略应为 M，不能把第二路麦克风标成 R。只改该板输入配置，不宜修改 ES8389 公共类或输出立体声配置。 |
+| ESP32-S3-Box-Lite | BoxAudioCodecLite | MMR when audio processing is on, otherwise MM | `input_channels_ = input_reference_ ? 2 : 1`; EnableInput/Read would then be adjusted accordingly for single-mic capture and layout. Needs on-device verification of single-channel capture, the software reference, and calls. |
+| ESP32-S31-Korvo-1 | Es8389AudioCodec | MM | Currently `AUDIO_INPUT_CHANNELS=2` with `input_reference_=false`; the single-mic policy should be M - the second mic channel must not be labeled R. Only this board's input configuration should change; the shared ES8389 class or its stereo output configuration should not be touched. |
 
-代码依据：[Box Lite](../main/boards/espressif/esp32-s3-box-lite/box_audio_codec_lite.cc)、[S31 Korvo 配置](../main/boards/espressif/esp32-s31-korvo-1/config.h)、[ES8389](../main/audio/codecs/es8389_audio_codec.cc)。当前正点原子 Box2 WiFi / 4G 均使用 ES8389 构造函数默认的单麦输入，并非双麦。
+Code references: [Box Lite](../main/boards/espressif/esp32-s3-box-lite/box_audio_codec_lite.cc), [S31 Korvo config](../main/boards/espressif/esp32-s31-korvo-1/config.h), [ES8389](../main/audio/codecs/es8389_audio_codec.cc). The current ALIENTEK Box2 WiFi / 4G both use the ES8389 constructor's default single-mic input, not dual-mic.
 
-## 修改前审计：参考通道相关例外
+## Pre-Change Audit: Reference-Channel Exceptions
 
-### LILYGO T-CameraPlus-S3 V1.0/V1.1：明确的格式不一致
+### LILYGO T-CameraPlus-S3 V1.0/V1.1: a clear format mismatch
 
-`config.h` 设置 `AUDIO_INPUT_REFERENCE=true`，codec 因而声明两通道 MR，但 `CreateVoiceHardware()` 将麦克风 RX 配置为 `I2S_SLOT_MODE_MONO`。`Read()` 直接读取单声道样本，没有插入播放参考；`Write()` 也没有建立软件回采。这样连续的麦克风样本会被上层按 M/R 成对解释，读取时长与上层帧长也不匹配。
+`config.h` sets `AUDIO_INPUT_REFERENCE=true`, so the codec declares two-channel MR, but `CreateVoiceHardware()` configures the microphone RX as `I2S_SLOT_MODE_MONO`. `Read()` reads mono samples directly with no playback reference inserted; `Write()` does not set up a software loopback either. As a result the upper layer interprets consecutive mic samples as M/R pairs, and the read duration does not match the upper layer's frame length either.
 
-这条路径应优先按实际单麦输入核对并改为 M，而不是继续统一 MR。V1.2 使用单声道 PDM 且声明 M，不受这个声明不一致影响。此处是独立源码发现，不能认定为 Box Lite issue 的根因。
+This path should first be reconciled against the actual mono input and changed to M, rather than keep being unified to MR. V1.2 uses mono PDM and declares M, so it is unaffected by this mismatch. This is an independent source-level finding and should not be taken as the root cause of the Box Lite issue.
 
-依据：[配置](../main/boards/lilygo/t-cameraplus-s3/config.h)、[codec](../main/boards/lilygo/t-cameraplus-s3/tcamerapluss3_audio_codec.cc)。
+Reference: [config](../main/boards/lilygo/t-cameraplus-s3/config.h), [codec](../main/boards/lilygo/t-cameraplus-s3/tcamerapluss3_audio_codec.cc).
 
-### LILYGO T-Circle-S3 / T-Display-S3-Pro-MVSrLora：参考来源待硬件核实
+### LILYGO T-Circle-S3 / T-Display-S3-Pro-MVSrLora: reference source still needs hardware verification
 
-两者声明 MR，直接从立体声麦克风 I2S RX 读取，没有软件插入播放参考。源码能够确认两通道布局，但不能证明第二个 slot 接入了播放回采；需核对原理图或录音。不可仅凭 `input_reference=true` 判定其 AEC 参考有效，也不能在未核对硬件时直接修改 slot/pin。
+Both declare MR and read directly from a stereo mic I2S RX, with no software-inserted playback reference. The source confirms the two-channel layout but cannot prove that the second slot is wired to a playback loopback; the schematic or a recording needs to be checked. `input_reference=true` alone should not be used to conclude the AEC reference is valid, and slot/pin should not be changed directly without verifying the hardware first.
 
-依据：[T-Circle](../main/boards/lilygo/t-circle-s3/tcircles3_audio_codec.cc)、[T-Display](../main/boards/lilygo/t-display-s3-pro-mvsrlora/tdisplays3promvsrlora_audio_codec.cc)。逐板表中 † 表示上述不一致或参考来源待核实。
+Reference: [T-Circle](../main/boards/lilygo/t-circle-s3/tcircles3_audio_codec.cc), [T-Display](../main/boards/lilygo/t-display-s3-pro-mvsrlora/tdisplays3promvsrlora_audio_codec.cc). In the per-board table, † marks the mismatch or pending-verification reference source described above.
 
-### 定义了参考宏，但实际 codec 仍是 M
+### Reference macro defined, but the actual codec is still M
 
-例如 M5Stack Atom EchoS3R、AtomS3R Echo Base 等目录定义 `AUDIO_INPUT_REFERENCE=true`，但实例化的是不接受该参数的 `Es8311AudioCodec`。该类固定 `input_reference_=false`、`input_channels_=1`。改宏不会自动产生回采。审计以实际构造参数和 codec 实现为准。
+For example, directories such as M5Stack Atom EchoS3R and AtomS3R Echo Base define `AUDIO_INPUT_REFERENCE=true`, but instantiate `Es8311AudioCodec`, which does not accept that parameter. That class fixes `input_reference_=false` and `input_channels_=1`. Changing the macro does not automatically produce a loopback. The audit goes by the actual constructor arguments and codec implementation.
 
-### 软件参考与硬件参考分开验证
+### Software reference and hardware reference verified separately
 
-Box Lite 与 AIVOX3 在 Read/Write 之间使用软件缓冲构造参考；BoxAudioCodec 等实现从选定 ADC/I2S 通道读取参考。统一为 MR 仅统一布局，不会统一两者的时序和回声消除效果。
+Box Lite and AIVOX3 construct the reference with a software buffer between Read/Write; implementations such as BoxAudioCodec read the reference from a selected ADC/I2S channel. Unifying everything to MR only unifies the layout - it does not unify the timing or echo-cancellation behavior of the two approaches.
 
-Box Lite 的共享参考缓冲及读写位置没有并发保护，采集错误仍返回成功，属于另外需要验证和修复的问题；不能以单麦切换代替这些检查。
+Box Lite's shared reference buffer and its read/write positions have no concurrency protection, and a capture error still returns success - that is a separate issue needing its own verification and fix; switching to single mic is not a substitute for these checks.
 
-## 后续硬件验证
+## Follow-Up Hardware Verification
 
-1. Box Lite：默认单麦 MR/M 与显式双麦 MMR/MM 对照，验证唤醒、通话、播放后再收音、打断和重连，以及设备端 AEC 开/关。单麦配置不能代替软件参考时序及并发检查。
-2. T-CameraPlus-S3：验证 V1.0/V1.1 的单声道采集与 M 声明，以及 V1.2 的回归。
-3. S31 Korvo-1：验证默认 M 采集与立体声播放；当前没有该板原故障的复现证据，不能宣称已修复该故障。
-4. 核对两款 LILYGO 的参考来源。无参考的板子若要新增 MR，必须实际提供并对齐参考数据，不能只改通道数或格式字符串。
+1. Box Lite: compare the default single-mic MR/M against the explicit dual-mic MMR/MM, verifying wake word, calls, re-listening after playback, interruption and reconnection, and on-device AEC on/off. The single-mic configuration is not a substitute for checking the software reference timing and concurrency.
+2. T-CameraPlus-S3: verify V1.0/V1.1's mono capture and M declaration, and the V1.2 regression.
+3. S31 Korvo-1: verify default M capture and stereo playback; there is currently no reproduction evidence for this board's original fault, so it should not be claimed as fixed.
+4. Check the reference source for both LILYGO boards. For boards without a reference, adding MR requires actually providing and aligning the reference data - not just changing the channel count or format string.
 
-前面对 ESP-SR 内部输出路径的分析仍是待验证假设，不作为故障已修复的依据。本轮没有实机验证。
+The earlier analysis of ESP-SR's internal output path is still an unverified hypothesis and should not be taken as evidence that the fault has been fixed. No on-device verification was done this round.
 
-## 本轮验证记录
+## This Round's Verification Record
 
-- 主机测试：`python3 -m unittest discover -s scripts/tests -v`，81 项通过。
-- 格式检查：4 个修改的 C/C++ 文件通过仓库配置的 clang-format 检查；差异空白检查保留 Box Lite 原有 CRLF 行尾。
-- Box Lite / T-CameraPlus-S3 V1.0/V1.1：按规范调用 `scripts/build.py`，ESP-IDF 6.1 在依赖配置阶段被阻断，报 `ESP_VIDEO_USE_CUSTOMIZED_ESP_H264_VERSION` 不存在。Box Lite 使用受支持的 6.0.2 重试也被配置检查阻断（`Missing required kconfig option after retry`）。这两款未完成固件编译。
-- ESP32-S31-Korvo-1：ESP-IDF `v6.1-beta1-701-g812f3e98ca5`，规范构建和固件合并通过。当前本地构建目录对应此板型。
-- 没有进行物理硬件测试；双麦实验路径尚未经实机验证。
+- Host tests: `python3 -m unittest discover -s scripts/tests -v`, 81 passed.
+- Format check: the 4 modified C/C++ files pass the repository's configured clang-format check; the diff whitespace check preserves Box Lite's original CRLF line endings.
+- Box Lite / T-CameraPlus-S3 V1.0/V1.1: called `scripts/build.py` per the standard procedure; ESP-IDF 6.1 was blocked during the dependency configuration stage, reporting that `ESP_VIDEO_USE_CUSTOMIZED_ESP_H264_VERSION` does not exist. Retrying Box Lite with the supported 6.0.2 was also blocked by the configuration check (`Missing required kconfig option after retry`). Firmware builds for these two were not completed.
+- ESP32-S31-Korvo-1: ESP-IDF `v6.1-beta1-701-g812f3e98ca5`, the standard build and firmware merge passed. The current local build directory corresponds to this board.
+- No physical hardware testing was performed; the dual-mic experimental path has not yet been verified on real hardware.
 
-## 修改前逐板清单
+## Pre-Change Per-Board List
 
-多个 codec 表示编译选项、硬件版本或运行时选择。格式逐项标注，避免把同目录的不同路径合并为一个结论。
+Several codecs represent a compile-time option, hardware revision, or runtime choice. The format is annotated per entry so that different paths within the same directory are not merged into a single conclusion.
 
-| 板级目录 | codec → 声明格式 |
+| Board directory | codec → declared format |
 |---|---|
 | [alientek/atk-dnesp32s3](../main/boards/alientek/atk-dnesp32s3/) | `Es8388AudioCodec` → M |
 | [alientek/atk-dnesp32s3-box](../main/boards/alientek/atk-dnesp32s3-box/) | `ATK_NoAudioCodecDuplex` → M<br>`Es8311AudioCodec` → M |
@@ -115,7 +115,7 @@ Box Lite 的共享参考缓冲及读写位置没有并发保护，采集错误�
 | [espressif/esp32-p4-function-ev-board](../main/boards/espressif/esp32-p4-function-ev-board/) | `Es8311AudioCodec` → M |
 | [espressif/esp32-s3-box](../main/boards/espressif/esp32-s3-box/) | `BoxAudioCodec` → MR |
 | [espressif/esp32-s3-box-3](../main/boards/espressif/esp32-s3-box-3/) | `BoxAudioCodec` → MR |
-| [espressif/esp32-s3-box-lite](../main/boards/espressif/esp32-s3-box-lite/) | `BoxAudioCodecLite` → MMR / MM（随音频处理开关） |
+| [espressif/esp32-s3-box-lite](../main/boards/espressif/esp32-s3-box-lite/) | `BoxAudioCodecLite` → MMR / MM (depending on the audio-processing switch) |
 | [espressif/esp32-s3-korvo-2-v3.0](../main/boards/espressif/esp32-s3-korvo-2-v3.0/) | `BoxAudioCodec` → MR |
 | [espressif/esp32-s3-korvo-2-v3.0-rndis](../main/boards/espressif/esp32-s3-korvo-2-v3.0-rndis/) | `BoxAudioCodec` → MR |
 | [espressif/esp32-s3-lcd-ev-board](../main/boards/espressif/esp32-s3-lcd-ev-board/) | `BoxAudioCodec` → MR |
@@ -140,7 +140,7 @@ Box Lite 的共享参考缓冲及读写位置没有并发保护，采集错误�
 | [lceda-course-examples/eda-tv-pro](../main/boards/lceda-course-examples/eda-tv-pro/) | `NoAudioCodecDuplex` → M<br>`NoAudioCodecSimplex` → M |
 | [lckfb/szpi-esp32c3](../main/boards/lckfb/szpi-esp32c3/) | `Es8311AudioCodec` → M |
 | [lckfb/szpi-esp32s3](../main/boards/lckfb/szpi-esp32s3/) | `CustomAudioCodec` → MR |
-| [lilygo/t-cameraplus-s3](../main/boards/lilygo/t-cameraplus-s3/) | `Tcamerapluss3AudioCodec` → MR†（V1.0/V1.1）/ M（V1.2） |
+| [lilygo/t-cameraplus-s3](../main/boards/lilygo/t-cameraplus-s3/) | `Tcamerapluss3AudioCodec` → MR† (V1.0/V1.1) / M (V1.2) |
 | [lilygo/t-circle-s3](../main/boards/lilygo/t-circle-s3/) | `Tcircles3AudioCodec` → MR† |
 | [lilygo/t-display-p4](../main/boards/lilygo/t-display-p4/) | `Es8311AudioCodec` → M |
 | [lilygo/t-display-s3-pro-mvsrlora](../main/boards/lilygo/t-display-s3-pro-mvsrlora/) | `Tdisplays3promvsrloraAudioCodec` → MR† |
@@ -175,7 +175,7 @@ Box Lite 的共享参考缓冲及读写位置没有并发保护，采集错误�
 | [nologo/xingzhi-cube-1.54tft-ml307](../main/boards/nologo/xingzhi-cube-1.54tft-ml307/) | `NoAudioCodecSimplex` → M |
 | [nologo/xingzhi-cube-1.54tft-wifi](../main/boards/nologo/xingzhi-cube-1.54tft-wifi/) | `NoAudioCodecSimplex` → M |
 | [nologo/xingzhi-metal-1.54-wifi](../main/boards/nologo/xingzhi-metal-1.54-wifi/) | `Es8311AudioCodec` → M |
-| [nulllab-ai-vox-v3](../main/boards/nulllab-ai-vox-v3/) | `AIVOX3AudioCodec` → MR / M（随设备 AEC 开关） |
+| [nulllab-ai-vox-v3](../main/boards/nulllab-ai-vox-v3/) | `AIVOX3AudioCodec` → MR / M (depending on the device AEC switch) |
 | [otto-robot](../main/boards/otto-robot/) | `NoAudioCodecDuplex` → M<br>`NoAudioCodecSimplex` → M |
 | [quandong-s3-dev](../main/boards/quandong-s3-dev/) | `Es8311AudioCodec` → M |
 | [rymcu/bigsmart](../main/boards/rymcu/bigsmart/) | `CustomAudioCodec` → MR |

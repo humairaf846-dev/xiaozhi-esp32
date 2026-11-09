@@ -74,7 +74,7 @@ class VersionTests(unittest.TestCase):
         self.assertEqual(atk["config"], "CONFIG_BOARD_TYPE_ATK_DNESP32S3")
         self.assertEqual(
             atk["display_name"],
-            "Alientek ATK-DNESP32S3 Development Board (正点原子)",
+            "Alientek ATK-DNESP32S3 Development Board",
         )
         self.assertEqual(
             build._get_release_full_name(
@@ -361,7 +361,7 @@ class BoardSelectionTests(unittest.TestCase):
             build._get_board_display_name(
                 "CONFIG_BOARD_TYPE_ATK_DNESP32S3"
             ),
-            "Alientek ATK-DNESP32S3 Development Board (正点原子)",
+            "Alientek ATK-DNESP32S3 Development Board",
         )
 
     def test_board_target_matching_uses_complete_kconfig_symbols(self):

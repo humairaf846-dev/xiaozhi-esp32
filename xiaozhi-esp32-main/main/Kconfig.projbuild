@@ -137,55 +137,55 @@ choice BOARD_TYPE
         The OTA board type and firmware variant name are configured separately.
 
     config BOARD_TYPE_ATK_DNESP32S3
-        bool "Alientek ATK-DNESP32S3 Development Board (正点原子)"
+        bool "Alientek ATK-DNESP32S3 Development Board"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_ATK_DNESP32S3_BOX
-        bool "Alientek ATK-DNESP32S3-BOX (正点原子)"
+        bool "Alientek ATK-DNESP32S3-BOX"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_ATK_DNESP32S3_BOX0
-        bool "Alientek ATK-DNESP32S3-BOX0 (正点原子)"
+        bool "Alientek ATK-DNESP32S3-BOX0"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_ATK_DNESP32S3_BOX2_4G
-        bool "Alientek ATK-DNESP32S3-BOX2 4G (正点原子)"
+        bool "Alientek ATK-DNESP32S3-BOX2 4G"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_ATK_DNESP32S3_BOX2_WIFI
-        bool "Alientek ATK-DNESP32S3-BOX2 Wi-Fi (正点原子)"
+        bool "Alientek ATK-DNESP32S3-BOX2 Wi-Fi"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_ATK_DNESP32S3_BOX3
-        bool "Alientek ATK-DNESP32S3-BOX3 (正点原子)"
+        bool "Alientek ATK-DNESP32S3-BOX3"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_ATK_DNESP32S3M_4G
-        bool "Alientek ATK-DNESP32S3M 4G (正点原子)"
+        bool "Alientek ATK-DNESP32S3M 4G"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_ATK_DNESP32S3M_WIFI
-        bool "Alientek ATK-DNESP32S3M Wi-Fi (正点原子)"
+        bool "Alientek ATK-DNESP32S3M Wi-Fi"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_BREAD_COMPACT_ESP32
-        bool "Bread Compact ESP32 DevKit (面包板)"
+        bool "Bread Compact ESP32 DevKit"
         depends on IDF_TARGET_ESP32
     config BOARD_TYPE_BREAD_COMPACT_ESP32_LCD
-        bool "Bread Compact ESP32 DevKit + LCD (面包板)"
+        bool "Bread Compact ESP32 DevKit + LCD"
         depends on IDF_TARGET_ESP32
     config BOARD_TYPE_BREAD_COMPACT_ML307
-        bool "Bread Compact ML307/EC801E 4G (面包板)"
+        bool "Bread Compact ML307/EC801E 4G"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_BREAD_COMPACT_NT26
-        bool "Bread Compact NT26 4G (面包板)"
+        bool "Bread Compact NT26 4G"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_BREAD_COMPACT_WIFI
-        bool "Bread Compact Wi-Fi (面包板)"
+        bool "Bread Compact Wi-Fi"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_BREAD_COMPACT_WIFI_LCD
-        bool "Bread Compact Wi-Fi + LCD (面包板)"
+        bool "Bread Compact Wi-Fi + LCD"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_BREAD_COMPACT_WIFI_CAM
-        bool "Bread Compact Wi-Fi + LCD + Camera (面包板)"
+        bool "Bread Compact Wi-Fi + LCD + Camera"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_CHD_ESP32S3_BOX
-        bool "CHD ESP32-S3-BOX (虫洞)"
+        bool "CHD ESP32-S3-BOX"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_CHD_ESP32S3_EYE
-        bool "CHD ESP32-S3-EYE (虫洞)"
+        bool "CHD ESP32-S3-EYE"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_CYBERAI_VOCAT_V2_0
         bool "Cyberai-Vocat-V2.0"
@@ -197,13 +197,13 @@ choice BOARD_TYPE
         bool "DFRobot ESP32-S3 AI Camera Module"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_DF_K10
-        bool "DFRobot UNIHIKER K10 (行空板 K10)"
+        bool "DFRobot UNIHIKER K10"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_DOIT_S3_AIBOX
-        bool "DOIT S3 AIBox (四博智联 AI 陪伴盒子)"
+        bool "DOIT S3 AIBox"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_DU_CHATX
-        bool "Du ChatX Wi-Fi (嘟嘟开发板)"
+        bool "Du ChatX Wi-Fi"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_ELECTRON_BOT
         bool "ElectronBot"
@@ -266,7 +266,7 @@ choice BOARD_TYPE
         bool "Freenove ESP32-S3 Display 2.8-inch LCD"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_GENJUTECH_S3_1_54TFT
-        bool "GenjuTech ESP32-S3 1.54-inch TFT (亘具科技)"
+        bool "GenjuTech ESP32-S3 1.54-inch TFT"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_GUITION_JC4827W543
         bool "Guition JC4827W543 4.3-inch ESP32-S3"
@@ -275,7 +275,7 @@ choice BOARD_TYPE
         bool "HU-087"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_JIUCHUAN
-        bool "Jiuchuan ESP32-S3 (九川智能)"
+        bool "Jiuchuan ESP32-S3"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_KEVIN_BOX_2
         bool "Kevin Box 2"
@@ -290,7 +290,7 @@ choice BOARD_TYPE
         bool "Kevin SP V4"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_KEVIN_YUYING_313LCD
-        bool "Kevin Yuying 3.13-inch LCD (鱼鹰科技)"
+        bool "Kevin Yuying 3.13-inch LCD"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_LABPLUS_LEDONG_V2
         bool "Labplus Ledong V2"
@@ -305,19 +305,19 @@ choice BOARD_TYPE
         bool "LCDWiki ES3C35P 3.5-inch ESP32-S3"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_EDA_ROBOT_PRO
-        bool "LCEDA Course Example EDA-Robot-Pro (EDA 课程案例)"
+        bool "LCEDA Course Example EDA-Robot-Pro"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_EDA_SUPER_BEAR
-        bool "LCEDA Course Example EDA-Super-Bear (EDA 课程案例)"
+        bool "LCEDA Course Example EDA-Super-Bear"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_EDA_TV_PRO
-        bool "LCEDA Course Example EDA-TV-Pro (EDA 课程案例)"
+        bool "LCEDA Course Example EDA-TV-Pro"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_LICHUANG_DEV_C3
-        bool "LCKFB SZPI ESP32-C3 (立创·实战派)"
+        bool "LCKFB SZPI ESP32-C3"
         depends on IDF_TARGET_ESP32C3
     config BOARD_TYPE_LICHUANG_DEV_S3
-        bool "LCKFB SZPI ESP32-S3 (立创·实战派)"
+        bool "LCKFB SZPI ESP32-S3"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_LILYGO_T_CAMERAPLUS_S3_V1_0_V1_1
         bool "LILYGO T-CameraPlus-S3 V1.0/V1.1"
@@ -380,16 +380,16 @@ choice BOARD_TYPE
         bool "M5Stack Tab5"
         depends on IDF_TARGET_ESP32P4
     config BOARD_TYPE_MAGICLICK_S3_2P4
-        bool "Magiclick 2.4 (神奇按钮)"
+        bool "Magiclick 2.4"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_MAGICLICK_S3_2P5
-        bool "Magiclick 2.5 (神奇按钮)"
+        bool "Magiclick 2.5"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_MAGICLICK_C3
-        bool "Magiclick C3 (神奇按钮)"
+        bool "Magiclick C3"
         depends on IDF_TARGET_ESP32C3
     config BOARD_TYPE_MAGICLICK_C3_V2
-        bool "Magiclick C3 V2 (神奇按钮)"
+        bool "Magiclick C3 V2"
         depends on IDF_TARGET_ESP32C3
     config BOARD_TYPE_MAZA_AI_ESP32_S3
         bool "Maza AI ESP32-S3"
@@ -398,13 +398,13 @@ choice BOARD_TYPE
         bool "Maza AI ESP32-S31"
         depends on IDF_TARGET_ESP32S31
     config BOARD_TYPE_MINSI_K08_DUAL
-        bool "Minsi K08 Dual Network (敏思科技)"
+        bool "Minsi K08 Dual Network"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_MIXGO_NOVA
-        bool "MixGo Nova (元控·青春)"
+        bool "MixGo Nova"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_MOVECALL_CUICAN_ESP32S3
-        bool "Movecall CuiCan (璀璨 AI 吊坠)"
+        bool "Movecall CuiCan"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_MOVECALL_MOJI_ESP32S3
         bool "Movecall Moji"
@@ -413,28 +413,28 @@ choice BOARD_TYPE
         bool "Movecall Moji 2.0"
         depends on IDF_TARGET_ESP32C5
     config BOARD_TYPE_XINGZHI_ABS_2_0
-        bool "Nologo Xingzhi ABS 2.0 (无名科技星智)"
+        bool "Nologo Xingzhi ABS 2.0"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_XINGZHI_CUBE_0_85TFT_ML307
-        bool "Nologo Xingzhi Cube 0.85-inch TFT ML307 (无名科技星智)"
+        bool "Nologo Xingzhi Cube 0.85-inch TFT ML307"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_XINGZHI_CUBE_0_85TFT_WIFI
-        bool "Nologo Xingzhi Cube 0.85-inch TFT Wi-Fi (无名科技星智)"
+        bool "Nologo Xingzhi Cube 0.85-inch TFT Wi-Fi"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_XINGZHI_CUBE_0_96OLED_ML307
-        bool "Nologo Xingzhi Cube 0.96-inch OLED ML307 (无名科技星智)"
+        bool "Nologo Xingzhi Cube 0.96-inch OLED ML307"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_XINGZHI_CUBE_0_96OLED_WIFI
-        bool "Nologo Xingzhi Cube 0.96-inch OLED Wi-Fi (无名科技星智)"
+        bool "Nologo Xingzhi Cube 0.96-inch OLED Wi-Fi"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_XINGZHI_CUBE_1_54TFT_ML307
-        bool "Nologo Xingzhi Cube 1.54-inch TFT ML307 (无名科技星智)"
+        bool "Nologo Xingzhi Cube 1.54-inch TFT ML307"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_XINGZHI_CUBE_1_54TFT_WIFI
-        bool "Nologo Xingzhi Cube 1.54-inch TFT Wi-Fi (无名科技星智)"
+        bool "Nologo Xingzhi Cube 1.54-inch TFT Wi-Fi"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_XINGZHI_METAL_1_54_WIFI
-        bool "Nologo Xingzhi Metal 1.54-inch Wi-Fi (无名科技星智)"
+        bool "Nologo Xingzhi Metal 1.54-inch Wi-Fi"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_AI_VOX3
         bool "NullLab AI Vox V3"
@@ -443,13 +443,13 @@ choice BOARD_TYPE
         bool "Otto Robot"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_QUANDONG_S3_DEV_2_8_LCD
-        bool "Quandong ESP32-S3 2.8-inch SPI LCD (全动 2.8寸)"
+        bool "Quandong ESP32-S3 2.8-inch SPI LCD"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_QUANDONG_S3_DEV_3_5_LCD
-        bool "Quandong ESP32-S3 3.5-inch QSPI LCD (全动 3.5寸)"
+        bool "Quandong ESP32-S3 3.5-inch QSPI LCD"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_QUANDONG_S3_DEV_4_0_LCD
-        bool "Quandong ESP32-S3 4.0-inch SPI LCD (全动 4.0寸)"
+        bool "Quandong ESP32-S3 4.0-inch SPI LCD"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_RYMCU_BIGSMART
         bool "RYMCU BigSmart"
@@ -470,7 +470,7 @@ choice BOARD_TYPE
         bool "Surfer C3 1.14-inch TFT"
         depends on IDF_TARGET_ESP32C3
     config BOARD_TYPE_TAIJI_PI_S3
-        bool "Taiji Pi ESP32-S3 (太极小派)"
+        bool "Taiji Pi ESP32-S3"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_WAVESHARE_ESP32_C5_TOUCH_LCD_1_69
         bool "Waveshare ESP32-C5-Touch-LCD-1.69"
@@ -647,7 +647,7 @@ choice BOARD_TYPE
         bool "WDMomo ESP32-CGC-144"
         depends on IDF_TARGET_ESP32
     config BOARD_TYPE_WK_ESP32S3_DEV
-        bool "WK ESP32-S3 Dev Board (维控智能开发板)"
+        bool "WK ESP32-S3 Dev Board"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_XMINI_C3
         bool "Xmini C3"
@@ -662,22 +662,22 @@ choice BOARD_TYPE
         bool "XOrigin AiPi-Lite"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_YUNLIAO_S3
-        bool "Yunliao S3 (小智云聊)"
+        bool "Yunliao S3"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_ZECTRIX_S3_EPAPER_4_2
         bool "Zectrix S3 ePaper 4.2"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_ZHENGCHEN_1_54TFT_ML307
-        bool "Zhengchen 1.54-inch TFT ML307 (征辰科技)"
+        bool "Zhengchen 1.54-inch TFT ML307"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_ZHENGCHEN_1_54TFT_WIFI
-        bool "Zhengchen 1.54-inch TFT Wi-Fi (征辰科技)"
+        bool "Zhengchen 1.54-inch TFT Wi-Fi"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_ZHENGCHEN_CAM_ML307
-        bool "Zhengchen AI Camera ML307 (征辰科技)"
+        bool "Zhengchen AI Camera ML307"
         depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_ZHENGCHEN_CAM
-        bool "Zhengchen AI Camera Wi-Fi (征辰科技)"
+        bool "Zhengchen AI Camera Wi-Fi"
         depends on IDF_TARGET_ESP32S3
 endchoice
 

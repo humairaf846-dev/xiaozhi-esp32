@@ -8,7 +8,7 @@ If you purchased or received a used device that is still bound to another person
 
 1. Collect the device ID and MAC address using the instructions below.
 2. Email [xiaozhi.ai@tenclass.com](mailto:xiaozhi.ai@tenclass.com?subject=Device%20unbinding%20request) with both identifiers.
-3. Use an email subject such as `Device unbinding / 解绑设备 - Device ID XXX - MAC address XXX`.
+3. Use an email subject such as `Device unbinding - Device ID XXX - MAC address XXX`.
 
 For multiple devices, attach a list containing the device ID and MAC address for each device.
 
