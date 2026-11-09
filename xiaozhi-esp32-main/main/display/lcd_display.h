@@ -1,7 +1,7 @@
 #ifndef LCD_DISPLAY_H
 #define LCD_DISPLAY_H
 
-#include "eye_face.h"
+#include "robot_face.h"
 #include "gif/lvgl_gif.h"
 #include "lvgl_display.h"
 
@@ -33,9 +33,9 @@ protected:
     esp_timer_handle_t preview_timer_ = nullptr;
     std::unique_ptr<LvglImage> preview_image_cached_ = nullptr;
     bool hide_subtitle_ = false;  // Control whether to hide chat messages/subtitles
-    std::unique_ptr<EyeFace> eye_face_;  // Full-screen robot eyes shown in place of emoji
+    std::unique_ptr<RobotFace> robot_face_;  // Full-screen robot face shown in place of emoji
 
-    void SetupEyeFace();
+    void SetupRobotFace();
 
     void InitializeLcdThemes();
     virtual bool Lock(int timeout_ms = 0) override;
@@ -49,6 +49,10 @@ protected:
 public:
     ~LcdDisplay();
     virtual bool SetEmotion(const char* emotion) override;
+    // Holds a named expression on the robot face for some seconds; false for an unknown name.
+    bool HoldExpression(const char* name, int seconds);
+    // Shows every expression in turn.
+    void ShowAllExpressions();
     virtual void SetChatMessage(const char* role, const char* content) override;
     virtual void RemoveChatMessage(const char* role, const char* content) override;
     virtual void ClearChatMessages() override;

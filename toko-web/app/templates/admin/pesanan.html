@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Pesanan{% endblock %}
+{% block content %}
+<h1>Pesanan</h1>
+{% if error %}<div class="alert">{{ error }}</div>{% endif %}
+<p class="filters">
+  <a href="/admin/pesanan" class="{% if not status and not sumber %}active{% endif %}">Semua</a>
+  {% for s in STATUS_PESANAN %}<a href="/admin/pesanan?status={{ s }}" class="{% if s == status %}active{% endif %}">{{ LABEL_STATUS[s] }}</a>{% endfor %}
+  <a href="/admin/pesanan?sumber=robot" class="{% if sumber == 'robot' %}active{% endif %}">dari robot</a>
+  <a href="/admin/pesanan?sumber=web" class="{% if sumber == 'web' %}active{% endif %}">dari web</a>
+</p>
+<p class="muted small">Status <b>Batal</b> otomatis mengembalikan stok. Klik nomor WhatsApp untuk menghubungi pelanggan.</p>
+{% set rows = pesanan %}
+{% include "admin/_pesanan.html" %}
+{% endblock %}

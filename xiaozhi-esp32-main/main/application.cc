@@ -1,4 +1,5 @@
 #include "application.h"
+#include "toko_reporter.h"
 #include "assets.h"
 #include "assets/lang_config.h"
 #include "audio_codec.h"
@@ -349,6 +350,7 @@ void Application::HandleActivationDoneEvent() {
 
     SystemInfo::PrintHeapStats();
     SetDeviceState(kDeviceStateIdle);
+    TokoReporter::GetInstance().Start();
 
     has_server_time_ = ota_->HasServerTime();
 
@@ -652,6 +654,7 @@ void Application::InitializeProtocol() {
                     SetDeviceState(kDeviceStateSpeaking);
                 });
             } else if (strcmp(state->valuestring, "stop") == 0) {
+                TokoReporter::GetInstance().FlushSpoken();
                 Schedule([this]() {
                     if (GetDeviceState() == kDeviceStateSpeaking) {
                         if (listening_mode_ == kListeningModeManualStop) {
@@ -670,6 +673,7 @@ void Application::InitializeProtocol() {
                         glyphs.clear();
                     }
                     ESP_LOGI(TAG, "<< %s", text->valuestring);
+                    TokoReporter::GetInstance().AddSpoken(text->valuestring);
                     Schedule([display, message = std::string(text->valuestring),
                               glyphs = std::move(glyphs), bpp]() {
                         display->AddTextGlyphs(glyphs, bpp);
@@ -686,6 +690,7 @@ void Application::InitializeProtocol() {
                     glyphs.clear();
                 }
                 ESP_LOGI(TAG, ">> %s", text->valuestring);
+                TokoReporter::GetInstance().ReportHeard(text->valuestring);
                 Schedule([display, message = std::string(text->valuestring),
                           glyphs = std::move(glyphs), bpp]() {
                     display->AddTextGlyphs(glyphs, bpp);
@@ -1028,6 +1033,33 @@ void Application::HandleStateChangedEvent() {
     auto display = board.GetDisplay();
     auto led = board.GetLed();
     led->OnStateChanged();
+
+    // Report a state the dashboard can trust: only Idle/Connecting/Notifying/Starting mean the robot is
+    // actually reachable ("siap"). WifiConfiguring/Upgrading/Activating/FatalError used to fall through
+    // to "siap" too, which showed a healthy green dot even while the robot could not respond to a call.
+    switch (new_state) {
+        case kDeviceStateListening:
+            TokoReporter::GetInstance().SetState("mendengarkan");
+            break;
+        case kDeviceStateSpeaking:
+            TokoReporter::GetInstance().SetState("berbicara");
+            break;
+        case kDeviceStateWifiConfiguring:
+            TokoReporter::GetInstance().SetState("atur_wifi");
+            break;
+        case kDeviceStateUpgrading:
+            TokoReporter::GetInstance().SetState("update");
+            break;
+        case kDeviceStateActivating:
+            TokoReporter::GetInstance().SetState("aktivasi");
+            break;
+        case kDeviceStateFatalError:
+            TokoReporter::GetInstance().SetState("error");
+            break;
+        default:
+            TokoReporter::GetInstance().SetState("siap");
+            break;
+    }
 
     switch (new_state) {
         case kDeviceStateUnknown:

@@ -1,0 +1,24 @@
+{% if not kelompok %}<p class="muted">Belum ada pembeli yang beraktivitas.</p>{% else %}
+<div class="pembeli-list">
+  {% for g in kelompok %}
+  <details class="pembeli-item" data-nama="{{ g.nama }}">
+    <summary>
+      <span class="pembeli-ringkas">
+        <span class="pembeli-no">Pembeli {{ loop.index }}</span>
+        <span class="pembeli-nama">{{ g.nama }}</span>
+        <span class="pembeli-meta muted small">{{ g.aktivitas|length }} aktivitas · terakhir {{ g.terakhir.strftime("%d/%m/%Y %H:%M") }}</span>
+      </span>
+    </summary>
+    <ul class="pembeli-aktivitas">
+      {% for a in g.aktivitas %}
+      <li>
+        <div class="meta">{{ a.waktu.strftime("%d/%m/%Y %H:%M") }} · <span class="tag {{ a.sumber }}">{{ a.sumber }}</span> · {{ LABEL_JENIS.get(a.jenis, a.jenis) }}</div>
+        <div>{{ a.ringkasan }}{% if a.pesanan_id %} · <a href="/admin/pesanan#p{{ a.pesanan_id }}">lihat pesanan</a>{% endif %}</div>
+        {% if a.detail %}<div class="detail">{{ a.detail }}</div>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </details>
+  {% endfor %}
+</div>
+{% endif %}

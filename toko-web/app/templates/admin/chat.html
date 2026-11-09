@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Chat - {{ toko.NAMA_TOKO }}{% endblock %}
+{% block content %}
+<h1>Chat pembeli</h1>
+{% if not toko.WA_NOTIF_TOKEN %}<p class="muted small">Notifikasi WhatsApp belum aktif karena WA_NOTIF_TOKEN di .env masih kosong. Chat tetap masuk ke halaman ini.</p>{% endif %}
+<div id="admin-chat" class="chat-admin" data-id="{{ chat_id }}">
+  <aside id="chat-daftar" class="panel"></aside>
+  <section class="panel chat-buka">
+    {% if chat_id %}
+    <div class="row-between">
+      <h2 id="chat-judul">Memuat...</h2>
+      <a id="chat-wa" class="btn small outline" target="_blank" rel="noopener" hidden>WhatsApp pembeli</a>
+    </div>
+    <div id="chat-thread" class="chat-isi"></div>
+    <form id="chat-balas" class="chat-form">
+      <input name="isi" maxlength="1000" required autocomplete="off" placeholder="Tulis balasan..." aria-label="Balasan">
+      <button class="btn">Kirim</button>
+    </form>
+    {% else %}
+    <p class="muted">Pilih chat di sebelah kiri.</p>
+    {% endif %}
+  </section>
+</div>
+<script src="{{ toko.aset('chat-admin.js') }}"></script>
+{% endblock %}

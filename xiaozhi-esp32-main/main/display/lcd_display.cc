@@ -321,11 +321,30 @@ MipiLcdDisplay::MipiLcdDisplay(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel
     }
 }
 
-void LcdDisplay::SetupEyeFace() {
+bool LcdDisplay::HoldExpression(const char* name, int seconds) {
+    const int expression = RobotFace::LookupExpression(name);
+    if (expression < 0 || robot_face_ == nullptr) {
+        return false;
+    }
     DisplayLockGuard lock(this);
-    // White eyes on a black background, independent of the light/dark theme.
-    eye_face_ = std::make_unique<EyeFace>(lv_screen_active(), width_, height_, lv_color_black(),
-                                          lv_color_white());
+    robot_face_->HoldExpression(expression, seconds);
+    robot_face_->Show();
+    return true;
+}
+
+void LcdDisplay::ShowAllExpressions() {
+    if (robot_face_ == nullptr) {
+        return;
+    }
+    DisplayLockGuard lock(this);
+    robot_face_->StartDemo();
+    robot_face_->Show();
+}
+
+void LcdDisplay::SetupRobotFace() {
+    DisplayLockGuard lock(this);
+    // Robot face, independent of the light/dark theme.
+    robot_face_ = std::make_unique<RobotFace>(lv_screen_active(), width_, height_);
     // Keep the low battery warning above the eyes.
     if (low_battery_popup_ != nullptr) {
         lv_obj_move_foreground(low_battery_popup_);
@@ -333,7 +352,7 @@ void LcdDisplay::SetupEyeFace() {
 }
 
 LcdDisplay::~LcdDisplay() {
-    eye_face_.reset();
+    robot_face_.reset();
     SetPreviewImage(nullptr);
 
     // Clean up GIF controller
@@ -545,7 +564,7 @@ void LcdDisplay::SetupUI() {
     lv_obj_set_style_text_font(emoji_label_, large_icon_font, 0);
     lv_obj_set_style_text_color(emoji_label_, lvgl_theme->text_color(), 0);
     lv_label_set_text(emoji_label_, MATERIAL_SYMBOLS_ROBOT_2);
-    SetupEyeFace();
+    SetupRobotFace();
 }
 #if CONFIG_IDF_TARGET_ESP32P4
 #define MAX_MESSAGES 40
@@ -1090,7 +1109,7 @@ void LcdDisplay::SetupUI() {
     lv_obj_set_style_text_color(low_battery_label_, lv_color_white(), 0);
     lv_obj_center(low_battery_label_);
     lv_obj_add_flag(low_battery_popup_, LV_OBJ_FLAG_HIDDEN);
-    SetupEyeFace();
+    SetupRobotFace();
 }
 
 void LcdDisplay::SetPreviewImage(std::unique_ptr<LvglImage> image) {
@@ -1204,21 +1223,21 @@ bool LcdDisplay::SetEmotion(const char* emotion) {
         return false;
     }
 
-    // Facial emotions are drawn as robot eyes. Names that are status icons (e.g. "wifi",
+    // Facial emotions are drawn on the robot face. Names that are status icons (e.g. "wifi",
     // "link", "warning") fall through to the normal UI so setup and error messages stay
     // readable; unknown names from the server fall back to neutral eyes.
-    int eye_expression = EyeFace::LookupExpression(emotion);
+    int eye_expression = RobotFace::LookupExpression(emotion);
     if (eye_expression < 0 && emotion != nullptr && material_symbols_get_utf8(emotion) == nullptr) {
         eye_expression = 0;
     }
-    if (eye_face_ != nullptr) {
+    if (robot_face_ != nullptr) {
         DisplayLockGuard lock(this);
         if (eye_expression >= 0) {
-            eye_face_->SetExpression(eye_expression);
-            eye_face_->Show();
+            robot_face_->SetExpression(eye_expression);
+            robot_face_->Show();
             return true;
         }
-        eye_face_->Hide();
+        robot_face_->Hide();
     }
 
     auto emoji_collection = static_cast<LvglTheme*>(current_theme_)->emoji_collection();

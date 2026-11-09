@@ -188,9 +188,9 @@ void Ml307Board::SetPowerSaveLevel(PowerSaveLevel level) {
 
 std::string Ml307Board::GetDeviceStatusJson() {
     /*
-     * 返回设备状态JSON
+     * Returns the device status JSON
      * 
-     * 返回的JSON结构如下：
+     * The returned JSON structure is as follows:
      * {
      *     "audio_speaker": {
      *         "volume": 70

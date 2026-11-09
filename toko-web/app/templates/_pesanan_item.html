@@ -1,0 +1,7 @@
+{% for it in pesanan.item %}
+<div class="psn-item">
+  <img src="{{ toko.foto_produk(it.nama_produk) }}" alt="" loading="lazy">
+  <div><b>{{ it.nama_produk }}</b><span class="muted small">{{ it.jumlah }} kg &times; {{ it.harga|rupiah }}</span></div>
+  <span>{{ it.subtotal|rupiah }}</span>
+</div>
+{% endfor %}

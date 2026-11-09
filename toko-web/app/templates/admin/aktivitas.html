@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Aktivitas{% endblock %}
+{% block content %}
+<h1>Aktivitas robot &amp; pelanggan</h1>
+<p class="filters">
+  <a href="/admin/aktivitas" class="{% if not sumber %}active{% endif %}">Semua</a>
+  <a href="/admin/aktivitas?sumber=robot" class="{% if sumber == 'robot' %}active{% endif %}">{{ ikon("robot") }} Robot</a>
+  <a href="/admin/aktivitas?sumber=web" class="{% if sumber == 'web' %}active{% endif %}">{{ ikon("web") }} Web</a>
+  <a href="/admin/aktivitas?sumber=admin" class="{% if sumber == 'admin' %}active{% endif %}">{{ ikon("admin") }} Admin</a>
+</p>
+<p class="muted small">Setiap ucapan ke robot beserta jawabannya, pesanan dari robot maupun web, dan perubahan oleh admin tercatat di sini. Aktivitas baru muncul otomatis. <span class="live"><i></i> Live</span></p>
+<section class="panel"><div id="feed" data-sumber="{{ sumber }}">{% include "admin/_aktivitas.html" %}</div></section>
+<div id="toast" class="toast"></div>
+<script src="{{ toko.aset('live.js') }}"></script>
+<script>mulaiLive({{ aktivitas[0].id if aktivitas else 0 }}, false);</script>
+{% endblock %}

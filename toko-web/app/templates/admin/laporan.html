@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Laporan{% endblock %}
+{% block content %}
+<div class="row-between"><h1>Laporan penjualan {{ label }}</h1>
+  <a class="btn outline" href="/admin/laporan/export?periode={{ periode }}">{{ ikon("kirim") }} Export Excel</a>
+</div>
+<p class="filters">
+  {% for key, nama in [("hari_ini", "Hari ini"), ("minggu_ini", "Minggu ini"), ("bulan_ini", "Bulan ini")] %}
+  <a href="/admin/laporan?periode={{ key }}" class="{% if key == periode %}active{% endif %}">{{ nama }}</a>{% endfor %}
+</p>
+<div class="stats">
+  <div class="stat"><span>Omzet (tanpa ongkir)</span><b>{{ data.omzet|rupiah }}</b></div>
+  <div class="stat"><span>Jeruk terjual</span><b>{{ data.total_kg }} kg</b></div>
+  <div class="stat"><span>Jumlah pesanan</span><b>{{ data.jumlah_pesanan }}</b><small>web {{ data.dari_web }} · robot {{ data.dari_robot }}</small></div>
+</div>
+<section class="panel">
+  <h2>Paling laku</h2>
+  {% if not data.terlaris %}<p class="muted">Belum ada penjualan.</p>{% else %}
+  <table class="table"><thead><tr><th>#</th><th>Jeruk</th><th>Terjual</th><th>Nilai</th></tr></thead>
+  <tbody>{% for t in data.terlaris %}<tr><td>{{ loop.index }}</td><td>{{ t.nama }}</td><td>{{ t.jumlah }} kg</td><td>{{ t.nilai|rupiah }}</td></tr>{% endfor %}</tbody></table>
+  {% endif %}
+  <p class="muted small">Pesanan berstatus batal tidak dihitung.</p>
+</section>
+{% endblock %}

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Masuk sebagai siapa? - {{ toko.NAMA_TOKO }}</title>
+  {% include "_kepala.html" %}
+</head>
+<body>
+<main class="welcome">
+  <div class="welcome-photo">
+    <img src="/static/img/papa.jpg" alt="{{ toko.NAMA_PEMILIK }}, pemilik {{ toko.NAMA_TOKO }}, di lapak jeruk">
+    <div class="caption">{{ toko.NAMA_PEMILIK }}, pemilik {{ toko.NAMA_TOKO }}</div>
+  </div>
+  <div class="welcome-body">
+    <span class="blob o"></span><span class="blob y"></span>
+    <span class="kicker fade-up">{{ toko.NAMA_TOKO }}</span>
+    <h1 class="fade-up d2">Masuk sebagai <span>siapa</span>?</h1>
+    <p class="fade-up d3">Pilih salah satu ya, kakak-kakak atau abang-abang.</p>
+    <div class="pilih fade-up d5">
+      <div class="pilih-bar">
+        <a href="/toko"><span>{{ ikon("keranjang") }}</span><b>Pembeli</b><small>Langsung masuk, tanpa sandi</small></a>
+        <a href="/admin/login"><span>{{ ikon("kunci") }}</span><b>Admin</b><small>Masuk pakai sandi</small></a>
+      </div>
+      <a class="pilih-kembali" href="/">&larr; Kembali</a>
+    </div>
+  </div>
+</main>
+</body>
+</html>

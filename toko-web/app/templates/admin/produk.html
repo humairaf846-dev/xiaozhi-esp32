@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Produk{% endblock %}
+{% block content %}
+<div class="row-between"><h1>Produk &amp; stok</h1><a class="btn" href="/admin/produk/baru">+ Produk baru</a></div>
+<table class="table">
+  <thead><tr><th>Jeruk</th><th>Harga/kg</th><th>Stok</th><th>Tambah / kurangi stok (kg)</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+  {% for p in produk %}
+    <tr class="{% if not p.aktif %}muted{% endif %}">
+      <td><b>{{ p.nama }}</b><br><small class="muted">{{ p.deskripsi }}</small></td>
+      <td>{{ p.harga|rupiah }}</td>
+      <td class="{% if p.stok == 0 %}danger{% elif p.stok <= 10 %}warn{% endif %}">{{ p.stok }} kg</td>
+      <td><form method="post" action="/admin/produk/{{ p.id }}/stok" class="inline">
+        <input type="number" name="tambah" value="10" class="small-input"> <button class="btn small">Simpan</button></form></td>
+      <td>{{ "dijual" if p.aktif else "disembunyikan" }}</td>
+      <td><a href="/admin/produk/{{ p.id }}">Ubah</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="muted small">Isi angka negatif (misalnya -3) untuk mengurangi stok, contohnya karena buah rusak.</p>
+{% endblock %}

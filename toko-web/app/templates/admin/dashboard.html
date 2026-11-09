@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - {{ toko.NAMA_TOKO }}{% endblock %}
+{% block content %}
+<div class="row-between fade-up">
+  <div>
+    <p class="muted small" style="margin:0">Langkah 3 dari 3 · {{ toko.NAMA_TOKO }}</p>
+    <h1 style="margin-top:4px">Hallo kakak-kakak dan abang-abang semua!</h1>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <span id="robot-status" class="robot-status {{ robot.kode }}"><i></i><span>{{ robot.teks }}</span></span>
+    <span id="xiaozhi-status" class="robot-status {{ xiaozhi.kode }}"><i></i><span>{{ xiaozhi.teks }}</span></span>
+    <span class="live"><i></i> Live</span>
+    <button id="suara" class="btn small outline" type="button">Nyalakan suara</button>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat"><span>Omzet hari ini</span><b id="s-omzet">{{ hari_ini.omzet|rupiah }}</b><small><span id="s-jumlah">{{ hari_ini.jumlah_pesanan }}</span> pesanan · <span id="s-kg">{{ hari_ini.total_kg }}</span> kg</small></div>
+  <div class="stat t"><span>Pesanan hari ini</span><b>{{ ikon("web") }} <span id="s-web">{{ hari_ini.dari_web }}</span> · {{ ikon("robot") }} <span id="s-robot">{{ hari_ini.dari_robot }}</span></b><small>dari web · dari robot</small></div>
+  <div class="stat y"><span>Aktivitas robot hari ini</span><b>{{ ikon("robot") }} <span id="s-robot-akt">{{ robot_hari_ini }}</span></b><small>ucapan orang ke robot · <span id="s-robot-dipakai">{{ robot_dipakai }}</span></small></div>
+  <div class="stat t"><span>Omzet bulan ini</span><b id="s-omzet-bulan">{{ bulan_ini.omzet|rupiah }}</b><small><span id="s-kg-bulan">{{ bulan_ini.total_kg }}</span> kg terjual</small></div>
+</div>
+
+<section class="panel fade-up">
+  <h2>Pembeli</h2>
+  <p class="muted small" style="margin-top:-6px">Dikelompokkan per pembeli supaya tidak bingung "jeruk ini punya siapa" - klik satu nama untuk buka riwayatnya.</p>
+  <div id="pembeli">{% include "admin/_pembeli.html" %}</div>
+</section>
+
+<div class="dash-grid">
+  <section class="panel">
+    <div class="row-between"><h2>Aktivitas langsung</h2><a href="/admin/aktivitas">semua →</a></div>
+    <p class="muted small" style="margin-top:-6px">Muncul otomatis begitu pelanggan memakai robot atau web.</p>
+    <div id="feed">{% include "admin/_aktivitas.html" %}</div>
+  </section>
+  <div>
+    <section class="panel">
+      <h2>Perlu ditindaklanjuti (<span id="jumlah-perlu">{{ perlu|length }}</span>)</h2>
+      <p class="muted small">Hitung ongkir → ubah ke "Menunggu pembayaran" → kabari pelanggan lewat WhatsApp.</p>
+      <div id="perlu">{% set rows = perlu %}{% set kembali = "/admin" %}{% include "admin/_pesanan.html" %}</div>
+    </section>
+    <section class="panel">
+      <h2>Omzet 7 hari terakhir</h2>
+      <div class="bars">
+        {% for h in harian %}
+        <div class="bar-row">
+          <span class="bar-label">{{ h.tanggal.strftime("%d/%m") }}</span>
+          <div class="bar-track"><div class="bar" style="width: {{ (h.omzet / maks * 100)|round(1) }}%"></div></div>
+          <span class="bar-value">{{ h.omzet|rupiah }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Stok menipis (≤ 10 kg)</h2>
+      {% if not menipis %}<p class="muted">Semua stok aman.</p>{% endif %}
+      <ul class="list">{% for p in menipis %}<li><a href="/admin/produk/{{ p.id }}">{{ p.nama }}</a> <b class="{% if p.stok == 0 %}danger{% else %}warn{% endif %}">{{ p.stok }} kg</b></li>{% endfor %}</ul>
+    </section>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+<script src="{{ toko.aset('live.js') }}"></script>
+<script>mulaiLive({{ id_terakhir }}, true);</script>
+{% endblock %}

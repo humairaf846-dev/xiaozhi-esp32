@@ -119,7 +119,7 @@ EspVideo::EspVideo(const esp_video_init_config_t& config) {
 
     const char* video_device_name = nullptr;
 
-    if (false) { /* 用于构建 else if */
+    if (false) { /* used to build else-if chain */
     }
 #if CONFIG_ESP_VIDEO_ENABLE_MIPI_CSI_VIDEO_DEVICE
     else if (config.csi != nullptr) {
@@ -213,7 +213,7 @@ EspVideo::EspVideo(const esp_video_init_config_t& config) {
             case V4L2_PIX_FMT_RGB565X:  // byte-swapped to RGB565 in Capture()
                 return 1;
 #ifdef CONFIG_XIAOZHI_ENABLE_HARDWARE_JPEG_ENCODER
-            case V4L2_PIX_FMT_YUV420:  // 软件 JPEG 编码器不支持 YUV420 格式
+            case V4L2_PIX_FMT_YUV420:  // the software JPEG encoder does not support YUV420
                 return 2;
 #endif  // CONFIG_XIAOZHI_ENABLE_HARDWARE_JPEG_ENCODER
             case V4L2_PIX_FMT_YUYV:
@@ -299,7 +299,7 @@ EspVideo::EspVideo(const esp_video_init_config_t& config) {
     frame_.height = setformat.fmt.pix.height;
 #endif
 
-    // 申请缓冲并mmap
+    // Request buffers and mmap
     struct v4l2_requestbuffers req = {};
     req.count = strcmp(video_device_name, ESP_VIDEO_MIPI_CSI_DEVICE_NAME) == 0 ? 2 : 1;
     req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -355,7 +355,7 @@ EspVideo::EspVideo(const esp_video_init_config_t& config) {
     }
 
 #ifdef CONFIG_ESP_VIDEO_ENABLE_ISP_VIDEO_DEVICE
-    // 当启用 ISP 时，ISP 需要一些照片来初始化参数，因此开启后后台拍摄5s照片并丢弃
+    // When ISP is enabled, it needs some frames to initialize parameters, so capture and discard frames for 5s in the background after start
     xTaskCreate(
         [](void* arg) {
             EspVideo* self = static_cast<EspVideo*>(arg);
@@ -431,7 +431,7 @@ bool EspVideo::Capture() {
             return false;
         }
         if (i == 2) {
-            // 保存帧副本到PSRAM
+            // Save a copy of the frame to PSRAM
             if (frame_.data) {
                 heap_caps_free(frame_.data);
                 frame_.data = nullptr;
@@ -486,7 +486,7 @@ bool EspVideo::Capture() {
                     frame_.format = sensor_format_;
                     break;
                 case V4L2_PIX_FMT_YUV422P: {
-                    // 这个格式是 422 YUYV，不是 planer
+                    // this format is 422 YUYV, not planar
                     frame_.format = V4L2_PIX_FMT_YUYV;
 #ifdef CONFIG_XIAOZHI_ENABLE_CAMERA_ENDIANNESS_SWAP
                     {
@@ -504,9 +504,9 @@ bool EspVideo::Capture() {
                     break;
                 }
                 case V4L2_PIX_FMT_RGB565X: {
-                    // 大端序的 RGB565 需要转换为小端序
-                    // 目前 esp_video 的大小端都会返回格式为 RGB565，不会返回格式为 RGB565X，此 case
-                    // 用于未来版本兼容
+                    // Big-endian RGB565 must be converted to little-endian
+                    // Currently esp_video returns RGB565 for both endiannesses, never RGB565X; this case
+                    // is for future version compatibility
                     auto src16 = (uint16_t*)mmap_buffers_[buf.index].start;
                     auto dst16 = (uint16_t*)frame_.data;
                     size_t pixel_count = (size_t)frame_.width * (size_t)frame_.height;
@@ -738,7 +738,7 @@ bool EspVideo::Capture() {
             srm_cfg.out.block_offset_y = 0;
             srm_cfg.out.srm_cm = PPA_SRM_COLOR_MODE_RGB565;
 
-            // 等比例缩放 1.0
+            // proportional scale 1.0
             srm_cfg.scale_x = 1.0f;
             srm_cfg.scale_y = 1.0f;
             srm_cfg.rotation_angle = ppa_angle;
@@ -773,7 +773,7 @@ bool EspVideo::Capture() {
         }
     }
 
-    // 显示预览图片
+    // Show preview image
     auto display = Board::GetInstance().GetDisplay();
     if (display != nullptr) {
         if (!frame_.data) {
@@ -783,12 +783,12 @@ bool EspVideo::Capture() {
         uint16_t w = frame_.width;
         uint16_t h = frame_.height;
         size_t lvgl_image_size = frame_.len;
-        size_t stride = ((w * 2) + 3) & ~3;  // 4字节对齐
+        size_t stride = ((w * 2) + 3) & ~3;  // 4-byte alignment
         lv_color_format_t color_format = LV_COLOR_FORMAT_RGB565;
         uint8_t* data = nullptr;
 
         switch (frame_.format) {
-            // LVGL 显示 YUV 系的图像似乎都有问题，暂时转换为 RGB565 显示
+            // LVGL seems to have trouble displaying YUV images, so convert to RGB565 for now
             case V4L2_PIX_FMT_YUYV:
             case V4L2_PIX_FMT_UYVY:
             case V4L2_PIX_FMT_YUV420:
@@ -845,7 +845,7 @@ bool EspVideo::Capture() {
                     return false;
                 }
                 memcpy(data, frame_.data, frame_.len);
-                lvgl_image_size = frame_.len;  // fallthrough 时兼顾 YUYV 与 RGB565
+                lvgl_image_size = frame_.len;  // on fallthrough, handles both YUYV and RGB565
                 break;
 
 #ifdef CONFIG_XIAOZHI_CAMERA_ALLOW_JPEG_INPUT
@@ -928,31 +928,31 @@ bool EspVideo::SetVFlip(bool enabled) {
 }
 
 /**
- * @brief 将摄像头捕获的图像发送到远程服务器进行AI分析和解释
+ * @brief Send the captured camera image to a remote server for AI analysis and explanation
  *
- * 该函数将当前摄像头缓冲区中的图像编码为JPEG格式，并通过HTTP POST请求
- * 以multipart/form-data的形式发送到指定的解释服务器。服务器将根据提供的
- * 问题对图像进行AI分析并返回结果。
+ * This function encodes the image in the current camera buffer as JPEG and sends it via HTTP POST
+ * as multipart/form-data to the configured explain server. The server analyzes the image
+ * with AI based on the given question and returns the result.
  *
- * 实现特点：
- * - 使用独立线程编码JPEG，与主线程分离
- * - 采用分块传输编码(chunked transfer encoding)优化内存使用
- * - 通过队列机制实现编码线程和发送线程的数据同步
- * - 支持设备ID、客户端ID和认证令牌的HTTP头部配置
+ * Implementation notes:
+ * - Encodes JPEG in a separate thread from the main thread
+ * - Uses chunked transfer encoding to reduce memory usage
+ * - Uses a queue to synchronize data between the encoding and sending threads
+ * - Supports HTTP headers for device ID, client ID and auth token
  *
- * @param question 要向AI提出的关于图像的问题，将作为表单字段发送
- * @return 成功时返回服务器的 JSON 响应，失败时返回可读错误信息
+ * @param question The question about the image to ask the AI, sent as a form field
+ * @return The server's JSON response on success, a readable error message on failure
  *
- * @note 调用此函数前必须先调用SetExplainUrl()设置服务器URL
- * @note 函数会等待之前的编码线程完成后再开始新的处理
- * @warning 如果摄像头缓冲区为空或网络连接失败，将返回错误信息
+ * @note SetExplainUrl() must be called to set the server URL before calling this function
+ * @note The function waits for the previous encoding thread to finish before starting
+ * @warning Returns an error message if the camera buffer is empty or the network fails
  */
 std::expected<std::string, std::string> EspVideo::Explain(const std::string& question) {
     if (explain_url_.empty()) {
         return std::unexpected("Image explain URL or token is not set");
     }
 
-    // 创建局部的 JPEG 队列, 40 entries is about to store 512 * 40 = 20480 bytes of JPEG data
+    // Create a local JPEG queue, 40 entries is about to store 512 * 40 = 20480 bytes of JPEG data
     QueueHandle_t jpeg_queue = xQueueCreate(40, sizeof(JpegChunk));
     if (jpeg_queue == nullptr) {
         ESP_LOGE(TAG, "Failed to create JPEG queue");
@@ -1008,10 +1008,10 @@ std::expected<std::string, std::string> EspVideo::Explain(const std::string& que
 
     auto network = Board::GetInstance().GetNetwork();
     auto http = network->CreateHttp(3);
-    // 构造multipart/form-data请求体
+    // Build multipart/form-data request body
     std::string boundary = "----ESP32_CAMERA_BOUNDARY";
 
-    // 配置HTTP客户端，使用分块传输编码
+    // Configure HTTP client with chunked transfer encoding
     http->SetHeader("Device-Id", SystemInfo::GetMacAddress().c_str());
     http->SetHeader("Client-Id", Board::GetInstance().GetUuid().c_str());
     if (!explain_token_.empty()) {
@@ -1034,7 +1034,7 @@ std::expected<std::string, std::string> EspVideo::Explain(const std::string& que
     };
 
     {
-        // 第一块：question字段
+        // Chunk 1: question field
         std::string question_field;
         question_field += "--" + boundary + "\r\n";
         question_field += "Content-Disposition: form-data; name=\"question\"\r\n";
@@ -1047,7 +1047,7 @@ std::expected<std::string, std::string> EspVideo::Explain(const std::string& que
         }
     }
     {
-        // 第二块：文件字段头部
+        // Chunk 2: file field header
         std::string file_header;
         file_header += "--" + boundary + "\r\n";
         file_header += "Content-Disposition: form-data; name=\"file\"; filename=\"camera.jpg\"\r\n";
@@ -1060,7 +1060,7 @@ std::expected<std::string, std::string> EspVideo::Explain(const std::string& que
         }
     }
 
-    // 第三块：JPEG数据
+    // Chunk 3: JPEG data
     size_t total_sent = 0;
     bool saw_terminator = false;
     while (true) {
@@ -1084,7 +1084,7 @@ std::expected<std::string, std::string> EspVideo::Explain(const std::string& que
     }
     // Wait for the encoder thread to finish
     encoder_thread_.join();
-    // 清理队列
+    // Clean up queue
     vQueueDelete(jpeg_queue);
 
     if (!saw_terminator || total_sent == 0) {
@@ -1093,7 +1093,7 @@ std::expected<std::string, std::string> EspVideo::Explain(const std::string& que
     }
 
     {
-        // 第四块：multipart尾部
+        // Chunk 4: multipart trailer
         std::string multipart_footer;
         multipart_footer += "\r\n--" + boundary + "--\r\n";
         if (write_or_fail(multipart_footer.c_str(), multipart_footer.size())) {
@@ -1101,7 +1101,7 @@ std::expected<std::string, std::string> EspVideo::Explain(const std::string& que
             return std::unexpected("Failed to upload photo");
         }
     }
-    // 结束块
+    // Final chunk
     if (write_or_fail("", 0)) {
         http->Close();
         return std::unexpected("Failed to upload photo");

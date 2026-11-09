@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <title>Label pesanan #{{ pesanan.id }}</title>
+  <style>
+    body { font-family: "Segoe UI", Arial, sans-serif; max-width: 380px; margin: 24px auto; color: #111; }
+    h1 { font-size: 1.3rem; margin: 0 0 4px; }
+    .garis { border-top: 2px dashed #999; margin: 12px 0; }
+    table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+    td { padding: 3px 0; vertical-align: top; }
+    td.label { color: #555; width: 38%; }
+    .total { font-weight: 700; font-size: 1.1rem; }
+    .tombol { margin-top: 18px; }
+    @media print { .tombol { display: none; } body { margin: 0; max-width: 100%; } }
+  </style>
+</head>
+<body>
+  <h1>{{ toko.NAMA_TOKO }}</h1>
+  <div class="muted">{{ toko.ALAMAT_TOKO }}</div>
+  <div class="garis"></div>
+  <table>
+    <tr><td class="label">No. Pesanan</td><td><b>#{{ pesanan.id }}</b></td></tr>
+    <tr><td class="label">Tanggal</td><td>{{ pesanan.dibuat.strftime("%d/%m/%Y %H:%M") }}</td></tr>
+    <tr><td class="label">Penerima</td><td><b>{{ pesanan.nama_pelanggan }}</b></td></tr>
+    <tr><td class="label">No. WhatsApp</td><td>{{ pesanan.telepon }}</td></tr>
+    <tr><td class="label">{{ "Ambil di toko" if pesanan.pengiriman == "ambil" else "Alamat" }}</td>
+        <td>{{ toko.ALAMAT_TOKO if pesanan.pengiriman == "ambil" else pesanan.alamat }}</td></tr>
+    {% if pesanan.catatan %}<tr><td class="label">Catatan</td><td>{{ pesanan.catatan }}</td></tr>{% endif %}
+  </table>
+  <div class="garis"></div>
+  <table>
+    {% for it in pesanan.item %}
+    <tr><td>{{ it.jumlah }} kg {{ it.nama_produk }}</td><td style="text-align:right">{{ it.subtotal|rupiah }}</td></tr>
+    {% endfor %}
+    {% if pesanan.diskon %}<tr><td>Diskon</td><td style="text-align:right">&minus; {{ pesanan.diskon|rupiah }}</td></tr>{% endif %}
+    {% if pesanan.pengiriman == "antar" %}<tr><td>Ongkir</td><td style="text-align:right">{{ pesanan.ongkir|rupiah if pesanan.ongkir is not none else "-" }}</td></tr>{% endif %}
+    <tr class="total"><td>Total</td><td style="text-align:right">{{ pesanan.total|rupiah }}</td></tr>
+  </table>
+  <div class="garis"></div>
+  <div class="muted">Estimasi tiba: {{ pesanan.estimasi_hari or "-" }}</div>
+  <div class="tombol"><button onclick="window.print()">Cetak</button></div>
+</body>
+</html>

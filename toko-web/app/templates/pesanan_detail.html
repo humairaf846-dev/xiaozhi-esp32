@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Pesanan #{{ pesanan.id }} - {{ toko.NAMA_TOKO }}{% endblock %}
+{% block content %}
+<div class="psn-detail">
+  <a class="psn-kembali" href="/pesanan-saya">&larr; Pesanan Saya</a>
+  {% if dibayar %}
+  <div class="psn-baru">
+    <img src="{{ toko.aset('img/terima-kasih.png') }}" alt="Terima kasih" class="psn-baru-emot">
+    <div><b>Terima kasih {{ pesanan.nama_pelanggan }}! Bukti pembayaran sudah kami terima.</b><p>Kami cek dulu ya, nanti kami kabari di sini.</p></div>
+  </div>
+  {% elif baru %}
+  <div class="psn-baru">{{ ikon("cek") }}<div><b>Pesanan #{{ pesanan.id }} diterima, {{ pesanan.nama_pelanggan }}.</b><p>Pantau statusnya di halaman ini.</p></div></div>
+  {% endif %}
+  <section class="psn-kartu">
+    <header><span>Pesanan #{{ pesanan.id }} <span class="muted small">{{ pesanan.dibuat.strftime("%d/%m/%Y %H:%M") }}</span></span>
+      <span id="psn-status" class="psn-status {{ tab_pesanan(pesanan) }}">{{ label_pembeli(pesanan) }}</span></header>
+    {% if pesanan.status == "batal" %}
+    <p class="psn-batal">Pesanan ini dibatalkan. Kalau ada pertanyaan, hubungi kami lewat chat.</p>
+    {% else %}
+    <ol class="linimasa">
+      {% for l in langkah %}
+      <li class="{% if l.selesai %}selesai{% elif l.sekarang %}sekarang{% endif %}">
+        <i>{% if l.selesai %}{{ ikon("cek") }}{% endif %}</i>
+        <b>{{ l.nama }}</b>
+        <small>{% if l.waktu %}{{ l.waktu.strftime("%d/%m %H:%M") }}{% endif %}</small>
+      </li>
+      {% endfor %}
+    </ol>
+    {% endif %}
+  </section>
+  {% if pesanan.status != "batal" %}
+  {% if pesanan.bisa_dibayar and pesanan.pembayaran.status in ("belum", "ditolak") %}
+  <a class="btn big full" href="/bayar/{{ pesanan.pembayaran.kode }}">{{ ikon("bayar") }} Bayar sekarang</a>
+  {% elif not pesanan.bisa_dibayar and pesanan.status in ("baru", "menunggu_bayar") %}
+  <p class="psn-info">{{ ikon("jam") }} Kami sedang menghitung ongkir. Setelah itu tombol bayar muncul di sini.</p>
+  {% elif pesanan.status == "diproses" %}
+  <p class="psn-info">{{ ikon("cek") }} Pesanan sudah dikemas, segera kami siapkan.</p>
+  {% elif pesanan.status == "dikirim" %}
+  <p class="psn-info">{{ ikon("kirim") }} {{ "Siap diambil di toko ya." if pesanan.pengiriman == "ambil" else "Sedang dalam perjalanan ke alamat kamu." }}</p>
+  {% endif %}
+  {% endif %}
+  <section class="psn-kartu">
+    <h2>Rincian</h2>
+    {% include "_pesanan_item.html" %}
+    <div class="psn-ringkas">
+      {% if pesanan.diskon %}<div class="baris"><span>Diskon</span><span>&minus; {{ pesanan.diskon|rupiah }}</span></div>{% endif %}
+      {% if pesanan.pengiriman == "antar" %}<div class="baris"><span>Ongkir</span><span>{{ pesanan.ongkir|rupiah if pesanan.ongkir is not none else "sedang dihitung" }}</span></div>{% endif %}
+      <div class="baris total"><span>Total</span><b>{{ pesanan.total|rupiah }}</b></div>
+    </div>
+    {% if pesanan.estimasi_hari and pesanan.status not in ("selesai", "batal") %}<p class="psn-info">{{ ikon("jam") }} Estimasi tiba: <b>{{ pesanan.estimasi_hari }}</b></p>{% endif %}
+  </section>
+  <section class="psn-kartu">
+    <h2>{{ "Ambil di toko" if pesanan.pengiriman == "ambil" else "Alamat pengiriman" }}</h2>
+    <p>{{ toko.ALAMAT_TOKO if pesanan.pengiriman == "ambil" else pesanan.alamat }}<br><span class="muted">{{ pesanan.nama_pelanggan }} · {{ pesanan.telepon }}</span></p>
+  </section>
+  {% if pesanan.status == "selesai" %}
+  <section class="psn-kartu">
+    <h2>Ajak teman, dapat diskon</h2>
+    <p class="muted small">Bagikan kode ini ke teman. Kalau mereka pakai kode ini saat checkout, mereka dapat potongan {{ 5000|rupiah }}.</p>
+    <div class="rekening">
+      <b>{{ pesanan.kode_referral }}</b>
+      <a class="btn small" href="{{ toko.wa_link('Beli jeruk enak di ' ~ toko.NAMA_TOKO ~ ', pakai kode ' ~ pesanan.kode_referral ~ ' buat diskon! ' ~ request.base_url ~ 'toko') }}" target="_blank" rel="noopener">{{ ikon("chat") }} Bagikan lewat WhatsApp</a>
+    </div>
+  </section>
+  <section class="psn-kartu">
+    <h2>Ulasan</h2>
+    {% if pesanan.ulasan %}
+    <p class="bintang-tampil">{{ "★" * pesanan.ulasan.bintang }}{{ "☆" * (5 - pesanan.ulasan.bintang) }}</p>
+    {% if pesanan.ulasan.komentar %}<p class="muted">{{ pesanan.ulasan.komentar }}</p>{% endif %}
+    <p class="muted small">Terima kasih sudah kasih ulasan!</p>
+    {% elif request.query_params.get('ulasan_terkirim') %}
+    <div class="alert info">Terima kasih ulasannya!</div>
+    {% else %}
+    {% if request.query_params.get('error_ulasan') %}<div class="alert">{{ request.query_params.get('error_ulasan') }}</div>{% endif %}
+    <form method="post" action="/pesanan/{{ pesanan.pembayaran.kode }}/ulasan">
+      <div class="bintang-pilih">
+        {% for n in range(5, 0, -1) %}
+        <input type="radio" name="bintang" id="bintang-{{ n }}" value="{{ n }}" {% if n == 5 %}checked{% endif %}><label for="bintang-{{ n }}">★</label>
+        {% endfor %}
+      </div>
+      <textarea name="komentar" rows="2" placeholder="Ceritakan pengalaman belanjanya (opsional)"></textarea>
+      <button class="btn">Kirim ulasan</button>
+    </form>
+    {% endif %}
+  </section>
+  {% endif %}
+  {% set item_json %}[{% for it in pesanan.item %}{"id": {{ it.produk_id }}, "jumlah": {{ it.jumlah }}}{% if not loop.last %},{% endif %}{% endfor %}]{% endset %}
+  <button type="button" class="btn outline full" onclick="pesanLagi('{{ item_json }}')">{{ ikon("keranjang") }} Pesan lagi</button>
+  <a class="btn outline full" href="{{ wa }}" target="_blank" rel="noopener">{{ ikon("chat") }} Hubungi lewat WhatsApp</a>
+</div>
+{% if baru %}<script>localStorage.removeItem("keranjang"); document.addEventListener("DOMContentLoaded", updateBadge);</script>{% endif %}
+<script>
+  // Reload when the admin changes the status, so the timeline never goes stale.
+  const awal = document.getElementById("psn-status").textContent;
+  setInterval(async () => {
+    try {
+      const r = await fetch("/pesanan/{{ pesanan.pembayaran.kode }}/status");
+      if ((await r.json()).status !== awal) location.href = location.pathname;
+    } catch (e) { /* try again next round */ }
+  }, 15000);
+</script>
+{% endblock %}

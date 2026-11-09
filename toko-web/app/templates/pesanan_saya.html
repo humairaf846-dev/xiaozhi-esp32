@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Pesanan Saya - {{ toko.NAMA_TOKO }}{% endblock %}
+{% block content %}
+<h1 class="psn-judul">Pesanan Saya</h1>
+<nav class="psn-tab" aria-label="Status pesanan">
+  <a href="/pesanan-saya" class="{% if not tab %}aktif{% endif %}">Semua</a>
+  {% for kunci, label in TAB_PESANAN.items() %}
+  <a href="/pesanan-saya?tab={{ kunci }}" class="{% if tab == kunci %}aktif{% endif %}">{{ label }}{% if jumlah[kunci] %} <small>{{ jumlah[kunci] }}</small>{% endif %}</a>
+  {% endfor %}
+</nav>
+{% for pesanan in daftar %}
+<article class="psn-kartu">
+  <header><span>Pesanan #{{ pesanan.id }} <span class="muted small">{{ pesanan.dibuat.strftime("%d/%m/%Y %H:%M") }}</span></span>
+    <span class="psn-status {{ tab_pesanan(pesanan) }}">{{ label_pembeli(pesanan) }}</span></header>
+  {% include "_pesanan_item.html" %}
+  <footer>
+    <span>Total <b>{{ pesanan.total|rupiah }}</b>{% if pesanan.pengiriman == "antar" and pesanan.ongkir is none %} <span class="muted small">belum ongkir</span>{% endif %}</span>
+    <span class="psn-aksi">
+      <a class="btn small outline" href="/pesanan/{{ pesanan.pembayaran.kode }}">Lihat detail</a>
+      {% if pesanan.bisa_dibayar and pesanan.pembayaran.status in ("belum", "ditolak") %}<a class="btn small" href="/bayar/{{ pesanan.pembayaran.kode }}">Bayar sekarang</a>{% endif %}
+      {% set item_json %}[{% for it in pesanan.item %}{"id": {{ it.produk_id }}, "jumlah": {{ it.jumlah }}}{% if not loop.last %},{% endif %}{% endfor %}]{% endset %}
+      <button type="button" class="btn small outline" onclick="pesanLagi('{{ item_json }}')">Pesan lagi</button>
+    </span>
+  </footer>
+</article>
+{% else %}
+<div class="psn-kosong">
+  <p>{% if total %}Belum ada pesanan di bagian ini.{% else %}Belum ada pesanan di perangkat ini.{% endif %}</p>
+  <a class="btn" href="/toko#produk">Mulai belanja</a>
+</div>
+{% endfor %}
+<details class="panel psn-cari" {% if error %}open{% endif %}>
+  <summary><b>Pesan dari HP lain atau lewat robot?</b></summary>
+  {% if error %}<div class="alert">{{ error }}</div>{% endif %}
+  <form method="post" action="/pesanan-saya/cari" class="psn-cari-form">
+    <label>Nomor pesanan <input name="nomor" inputmode="numeric" required placeholder="Contoh: 12"></label>
+    <label>No. WhatsApp <input name="telepon" inputmode="tel" required placeholder="08..."></label>
+    <button class="btn">Cari pesanan</button>
+  </form>
+</details>
+{% endblock %}

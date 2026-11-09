@@ -28,9 +28,14 @@ private:
     lv_obj_t* eye_rect_[2] = {nullptr, nullptr};
     lv_obj_t* eye_arc_[2] = {nullptr, nullptr};
     lv_obj_t* eye_lid_[2] = {nullptr, nullptr};
+    lv_obj_t* eye_shine_[2] = {nullptr, nullptr};        // big sparkle inside each eye
+    lv_obj_t* eye_shine_small_[2] = {nullptr, nullptr};  // small sparkle inside each eye
+    lv_obj_t* blush_[2] = {nullptr, nullptr};            // pink cheeks (color screens with a mouth)
     lv_point_precise_t lid_points_[2][2] = {};
     lv_obj_t* mouth_rect_ = nullptr;
     lv_obj_t* mouth_arc_ = nullptr;
+    lv_obj_t* mouth_cover_ = nullptr;  // hides the top half of the open mouth -> smiling "D" shape
+    lv_obj_t* tongue_ = nullptr;
     lv_timer_t* blink_timer_ = nullptr;
 
     int width_;
@@ -49,10 +54,15 @@ private:
     bool blinking_ = false;
     bool speaking_ = false;
     int mouth_level_ = 0;
+    int gaze_dx_ = 0;  // idle "looking around", in 1/16 of the base eye height
+    int gaze_dy_ = 0;
+    int gaze_countdown_ = 40;
 
     void Apply(bool blink);
     void ApplyMouth();
+    void ApplyBlush();
     void UpdateMouth();
+    void UpdateGaze();
     void ResetBlinkCountdown();
     static void BlinkTimerCallback(lv_timer_t* timer);
 };

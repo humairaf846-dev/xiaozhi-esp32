@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ "Ubah" if p else "Tambah" }} Produk{% endblock %}
+{% block content %}
+<form method="post" action="/admin/produk/simpan" class="panel narrow">
+  <h1>{{ "Ubah produk" if p else "Produk baru" }}</h1>
+  {% if p %}<input type="hidden" name="produk_id" value="{{ p.id }}">{% endif %}
+  <div class="two">
+    <label>Jenis <input name="jenis" list="jenis" required maxlength="60" value="{{ p.jenis if p else 'Jeruk Manis' }}"></label>
+    <label>Ukuran <input name="ukuran" list="ukuran" maxlength="30" value="{{ p.ukuran if p else '' }}"></label>
+  </div>
+  <datalist id="jenis"><option value="Jeruk Manis"><option value="Jeruk Peras"></datalist>
+  <datalist id="ukuran"><option value="Besar"><option value="Sedang"><option value="Kecil"></datalist>
+  <label>Keterangan <input name="deskripsi" value="{{ p.deskripsi if p else '' }}"></label>
+  <div class="two">
+    <label>Harga per kg (Rp) <input type="number" name="harga" min="0" step="500" required value="{{ p.harga if p else '' }}"></label>
+    <label>Stok (kg) <input type="number" name="stok" min="0" value="{{ p.stok if p else 0 }}"></label>
+  </div>
+  <label class="check"><input type="checkbox" name="aktif" value="true" {% if not p or p.aktif %}checked{% endif %}> Tampilkan &amp; jual</label>
+  <button class="btn big">Simpan</button> <a href="/admin/produk">Batal</a>
+</form>
+{% endblock %}

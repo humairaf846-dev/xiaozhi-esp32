@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Selamat datang - Toko Jeruk {{ toko.NAMA_TOKO }}</title>
+  {% include "_kepala.html" %}
+</head>
+<body>
+<main class="sambut" style="background-image:url('{{ toko.aset('img/lapak.jpg') }}')">
+  <div class="sambut-kotak">
+    <div class="sambut-emot">{{ SENYUM }}</div>
+    <p class="sambut-sapa fade-up">Hallo kakak-kakak dan abang-abang semua</p>
+    <h1 class="fade-up d2">Selamat datang di<br>Toko Jeruk <span>{{ toko.NAMA_TOKO }}</span></h1>
+    <p class="sambut-isi fade-up d3">Jeruk manis dan jeruk peras segar, setiap hari di {{ toko.ALAMAT_TOKO }}.</p>
+    {% if jumlah_selesai > 0 %}<p class="lencana-selesai fade-up d4">{{ ikon("cek") }} Sudah {{ jumlah_selesai }} pesanan selesai dilayani</p>{% endif %}
+    <a class="btn big sambut-tombol fade-up d5" href="/pilih">Masuk</a>
+  </div>
+</main>
+</body>
+</html>

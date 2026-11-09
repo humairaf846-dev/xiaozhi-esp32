@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Masuk Pemilik - {{ toko.NAMA_TOKO }}{% endblock %}
+{% block content %}
+<div class="login-wrap">
+  <div class="login-card fade-up">
+    <div class="side">
+      <img src="/static/img/papa.jpg" alt="{{ toko.NAMA_PEMILIK }}">
+      <div>
+        <h2>Halo, {{ toko.NAMA_PEMILIK }}!</h2>
+        <p>Masuk untuk melihat pesanan, stok jeruk, dan aktivitas robot secara langsung.</p>
+      </div>
+      <a href="/pilih" style="color:#dcefe0">← Kembali</a>
+    </div>
+    <form method="post">
+      <div class="stepper"><span class="on"></span><span class="on"></span><span></span></div>
+      <p class="muted small">Langkah 2 dari 3</p>
+      <h1>Masukkan password</h1>
+      {% if error %}<div class="alert">{{ error }}</div>{% endif %}
+      <label>Password <input type="password" name="password" required autofocus autocomplete="current-password"></label>
+      <button class="btn big teal full">Masuk ke dashboard →</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

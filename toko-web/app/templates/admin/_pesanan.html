@@ -1,0 +1,68 @@
+{% if not rows %}<p class="muted">Tidak ada pesanan.</p>{% else %}
+<div class="orders">
+{% for o in rows %}
+  <div class="order {{ o.status }}" id="p{{ o.id }}">
+    <div class="order-head">
+      <b>#{{ o.id }} · {{ o.nama_pelanggan }}</b>
+      <span class="tag {{ o.sumber }}">{{ o.sumber }}</span>
+      {% if o.kode_promo %}<span class="tag">{{ ikon("bayar") }} {{ o.kode_promo }}</span>{% endif %}
+      <span class="muted">{{ o.dibuat.strftime("%d/%m %H:%M") }}</span>
+      <a class="btn small outline" href="/admin/pesanan/{{ o.id }}/cetak" target="_blank" rel="noopener">{{ ikon("catatan") }} Cetak</a>
+    </div>
+    <div class="order-body">
+      <div>
+        {% for it in o.item %}<div>{{ it.jumlah }} kg {{ it.nama_produk }} <span class="muted">({{ it.subtotal|rupiah }})</span></div>{% endfor %}
+        <div class="muted small">
+          {{ ikon("telepon") }} <a href="{{ toko.wa_link('Halo ' ~ o.nama_pelanggan ~ ', ini dari ' ~ toko.NAMA_TOKO ~ ' soal pesanan #' ~ o.id ~ '.', o.telepon) }}" target="_blank" rel="noopener">{{ o.telepon }}</a>
+          · {{ "Ambil di toko" if o.pengiriman == "ambil" else "Antar: " ~ o.alamat }}
+          {% if o.keperluan != "biasa" %} · <b>{{ o.keperluan }}</b>{% endif %}
+          {% if o.tanggal_butuh %} · butuh {{ o.tanggal_butuh.strftime("%d/%m/%Y") }}{% endif %}
+          {% if o.catatan %}<br>{{ ikon("catatan") }} {{ o.catatan }}{% endif %}
+        </div>
+      </div>
+      <div class="sum">
+        <div>Belanja {{ o.subtotal|rupiah }}</div>
+        {% if o.diskon %}<div class="ok">Diskon −{{ o.diskon|rupiah }}</div>{% endif %}
+        <div>Ongkir {{ o.ongkir|rupiah if o.ongkir is not none else "belum dihitung" }}</div>
+        <div><b>Total {{ o.total|rupiah }}</b></div>
+      </div>
+    </div>
+    {% set b = o.pembayaran %}
+    {% if b %}
+    <div class="order-bayar {{ b.status }}">
+      <span class="bayar-status">{{ LABEL_BAYAR[b.status] }}</span>
+      {% if b.bukti %}<span class="muted small">{{ b.jumlah|rupiah }} via {{ LABEL_METODE.get(b.metode, b.metode) }}{% if b.bank %} {{ b.bank }}{% endif %}</span>
+      <a href="/admin/bukti/{{ b.id }}" target="_blank" rel="noopener">Lihat bukti</a>{% endif %}
+      {% if b.status == "menunggu" %}
+      <form method="post" action="/admin/pembayaran/{{ b.id }}" class="inline">
+        <input type="hidden" name="kembali" value="{{ kembali or '/admin/pesanan' }}#p{{ o.id }}">
+        <button class="btn small" name="keputusan" value="terima">Uang sudah masuk</button>
+        <button class="btn small outline" name="keputusan" value="tolak">Tolak</button>
+      </form>
+      {% elif b.status in ("lunas", "ditolak") and b.bukti and not toko.WA_NOTIF_TOKEN %}
+      <a class="btn small outline" href="{{ toko.wa_link(pesan_keputusan(b, b.status == 'lunas'), o.telepon) }}" target="_blank" rel="noopener">Kabari pembeli lewat WA</a>
+      {% elif b.status != "lunas" and o.bisa_dibayar %}
+      <a class="btn small outline" href="{{ toko.wa_link('Halo ' ~ o.nama_pelanggan ~ ', total pesanan #' ~ o.id ~ ' di ' ~ toko.NAMA_TOKO ~ ' adalah ' ~ o.total|rupiah ~ '. Silakan bayar di sini: ' ~ request.base_url ~ 'bayar/' ~ b.kode, o.telepon) }}" target="_blank" rel="noopener">Kirim link bayar</a>
+      {% endif %}
+    </div>
+    {% endif %}
+    <form method="post" action="/admin/pesanan/{{ o.id }}" class="order-form">
+      <input type="hidden" name="kembali" value="{{ kembali or '/admin/pesanan' }}#p{{ o.id }}">
+      {% if o.pengiriman == "antar" %}
+      <label>Ongkir <input type="number" name="ongkir" min="0" step="500" value="{{ o.ongkir if o.ongkir is not none else '' }}" placeholder="Rp"></label>
+      {% if toko.GOOGLE_MAPS_API_KEY %}
+      <button type="submit" formaction="/admin/pesanan/{{ o.id }}/ongkir-otomatis" class="btn small outline" title="Hitung ongkir dari jarak alamat">{{ ikon("peta") }} Hitung otomatis</button>
+      {% endif %}
+      {% endif %}
+      <label>Estimasi tiba <input type="text" name="estimasi_hari" maxlength="40" value="{{ o.estimasi_hari }}" placeholder="misal 2-3 hari"></label>
+      <label>Status
+        <select name="status" class="status {{ o.status }}">
+          {% for s in STATUS_PESANAN %}<option value="{{ s }}" {% if s == o.status %}selected{% endif %}>{{ LABEL_STATUS[s] }}</option>{% endfor %}
+        </select>
+      </label>
+      <button class="btn small">Simpan</button>
+    </form>
+  </div>
+{% endfor %}
+</div>
+{% endif %}

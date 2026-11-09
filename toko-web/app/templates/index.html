@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block content %}
+{% set foto_jenis = {"Jeruk Manis": "jeruk-manis.jpg", "Jeruk Peras": "jeruk-peras.jpg"} %}
+<section class="hero fade-up">
+  <div class="hero-teks">
+    <span class="hero-kecil">Langsung dari kebun sendiri</span>
+    <h1>Jeruk <span>manis</span> &amp; jeruk <span>peras</span> segar dari Pariaman</h1>
+    <p>Dipetik langsung dari pohonnya dan dipilih yang bagus sebelum dikemas. Pesan di sini, lewat WhatsApp,
+       atau tanya langsung ke robot kucing biru kami di lapak!</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
+      <a class="btn big" href="#produk">Lihat harga</a>
+      <a class="btn big ghost" href="{{ toko.wa_link('Halo, saya mau tanya jeruk') }}" target="_blank" rel="noopener">{{ ikon("chat") }} Chat WhatsApp</a>
+    </div>
+  </div>
+  <div class="hero-photo">
+    <img src="{{ toko.aset('img/lapak.jpg') }}" alt="Lapak jeruk {{ toko.NAMA_TOKO }} di {{ toko.ALAMAT_TOKO }}">
+    <div class="lokasi">{{ ikon("lokasi") }} Lapak kami di Pasar Pariaman</div>
+    <div class="sticker">Diskon {{ toko.DISKON_PERSEN }}% mulai {{ toko.DISKON_MIN_KG }} kg!</div>
+  </div>
+</section>
+
+<section class="info">
+  <div><span class="ic">{{ ikon("lokasi") }}</span><b>Lokasi</b><span>{{ toko.ALAMAT_TOKO }}</span></div>
+  <div><span class="ic">{{ ikon("jam") }}</span><b>Jam buka</b><span>{{ toko.JAM_BUKA }}</span></div>
+  <div><span class="ic">{{ ikon("kirim") }}</span><b>Pengiriman</b><span>Dalam kota saja, ongkir sesuai tujuan &amp; berat</span></div>
+  <div><span class="ic">{{ ikon("bayar") }}</span><b>Pembayaran</b><span>QRIS, transfer bank, atau bayar di tempat (ambil di toko) · <button type="button" class="link-qris" onclick="document.getElementById('qris-dialog').showModal()">Lihat QRIS</button></span></div>
+</section>
+
+<div class="promo">Beli <b>{{ toko.DISKON_MIN_KG }} kg ke atas</b> dapat <b>diskon {{ toko.DISKON_PERSEN }}%</b> · Minimal pembelian {{ toko.MIN_KG }} kg · Bisa untuk acara, usaha minuman &amp; oleh-oleh (dikemas kotak)</div>
+
+<section id="produk">
+  <h2 class="section-title">Pilih jeruknya</h2>
+  {% for jenis, daftar in jenis.items() %}
+  <div class="jenis">
+    <div class="jenis-photo">
+      <img src="{{ toko.aset('img/' ~ foto_jenis.get(jenis, 'panen.jpg')) }}" alt="{{ jenis }}" loading="lazy">
+      <div class="label"><b>{{ jenis }}</b><small>{{ daftar[0].deskripsi }}</small></div>
+    </div>
+    <div class="grid">
+      {% for p in daftar %}
+      <div class="card">
+        <div class="card-foto u-{{ p.ukuran|lower }}"><img src="{{ toko.foto_produk(p.nama) }}" alt="{{ p.nama }}" loading="lazy"><span class="size">{{ p.ukuran or "Ukuran standar" }}</span></div>
+        <h3>{{ p.nama }}</h3>
+        <div class="price">{{ p.harga|rupiah }} <small>/ kg</small></div>
+        {% if p.stok > 0 %}
+          <div class="stock {% if p.stok <= 10 %}low{% endif %}">● Stok {{ p.stok }} kg</div>
+          <div class="qty">
+            <input type="number" min="{{ toko.MIN_KG }}" max="{{ p.stok }}" value="1" aria-label="Jumlah kg"> kg
+            <button class="btn" data-id="{{ p.id }}" data-nama="{{ p.nama }}" onclick="tambahKeKeranjang(this)">+ Keranjang</button>
+          </div>
+        {% else %}
+          <div class="stock out">● Stok habis</div>
+          <button class="btn full" disabled>Habis</button>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</section>
+
+<h2 class="section-title">Dari kebun &amp; lapak kami</h2>
+<section class="gallery">
+  <figure><img src="/static/img/papa.jpg" alt="Pemilik di lapak jeruk Pasar Pariaman" loading="lazy" style="object-position:center 20%"><figcaption>{{ toko.NAMA_PEMILIK }} di lapak</figcaption></figure>
+  <figure><img src="/static/img/jeruk-manis.jpg" alt="Jeruk dibelah, daging buahnya oranye" loading="lazy"><figcaption>Daging buahnya segar</figcaption></figure>
+  <figure><img src="/static/img/kebun.jpg" alt="Buah di pohon" loading="lazy"><figcaption>Langsung dari pohonnya</figcaption></figure>
+  <figure><img src="{{ toko.aset('img/jeruk-peras.jpg') }}" alt="Tumpukan jeruk" loading="lazy"><figcaption>Stok melimpah</figcaption></figure>
+  <figure><img src="/static/img/panen.jpg" alt="Jeruk hasil panen" loading="lazy"><figcaption>Hasil panen</figcaption></figure>
+</section>
+
+{% if ulasan %}
+<h2 class="section-title">Apa kata pembeli</h2>
+<div class="testimoni-grid">
+  {% for u in ulasan %}
+  <div class="testimoni-item">
+    <p class="bintang-tampil">{{ "★" * u.bintang }}{{ "☆" * (5 - u.bintang) }}</p>
+    {% if u.komentar %}<p>&ldquo;{{ u.komentar }}&rdquo;</p>{% endif %}
+    <p class="muted small">— {{ u.nama }}</p>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<section class="panel about" style="margin-top:22px">
+  <img src="/static/img/papa.jpg" alt="{{ toko.NAMA_PEMILIK }}" loading="lazy">
+  <div>
+    <span class="tag">Kenalan dulu yuk</span>
+    <h2 style="margin-top:8px">Dari kebun {{ toko.NAMA_PEMILIK }} untuk kakak-kakak dan abang-abang</h2>
+    <p>Setiap hari {{ toko.NAMA_PEMILIK }} berjualan di {{ toko.ALAMAT_TOKO }}. Jeruk dipetik langsung dari kebun sendiri,
+       lalu dipilih satu per satu supaya yang sampai ke kakak-kakak dan abang-abang hanya buah yang bagus.</p>
+    <p class="muted">Ada robot kucing biru di lapak yang siap menjawab pertanyaan dan mencatat pesanan kakak-kakak dan abang-abang.</p>
+  </div>
+</section>
+
+<section id="lokasi" class="panel">
+  <div class="map-wrap">
+    <div>
+      <h2>Lokasi lapak</h2>
+      <p><b>{{ toko.ALAMAT_TOKO }}</b></p>
+      <p class="muted">{{ toko.JAM_BUKA }}. Kalau mau datang langsung, kabari dulu lewat WhatsApp supaya kami pastikan stoknya tersedia ya, kakak-kakak atau abang-abang.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <a class="btn teal" href="{{ toko.maps_link() }}" target="_blank" rel="noopener">{{ ikon("peta") }} Buka di Google Maps</a>
+        <a class="btn outline" href="{{ toko.wa_link('Halo, saya mau datang ke lapak') }}" target="_blank" rel="noopener">{{ ikon("chat") }} Kabari dulu</a>
+      </div>
+    </div>
+    <iframe src="{{ toko.maps_embed() }}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Peta lokasi {{ toko.NAMA_TOKO }}"></iframe>
+  </div>
+</section>
+
+<section id="faq" class="panel">
+  <h2>Tanya jawab</h2>
+  <p class="muted">Pertanyaan yang sama juga bisa ditanyakan langsung ke robot kami di lapak.</p>
+  <div class="faq-cols">
+  {% for f in faq %}<details><summary>{{ f.pertanyaan }}</summary><p>{{ f.jawaban }}</p></details>{% endfor %}
+  </div>
+  <div class="tanya-lain">
+    <div><b>Punya pertanyaan lain?</b><p>Tanyakan apa saja di luar daftar ini. Admin akan membalas langsung di chat.</p></div>
+    <button type="button" class="btn big" onclick="bukaChat()">{{ ikon("chat") }} Tanya admin</button>
+  </div>
+</section>
+<div id="toast" class="toast"></div>
+{% endblock %}

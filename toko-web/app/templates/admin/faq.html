@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}FAQ Robot{% endblock %}
+{% block content %}
+<h1>FAQ untuk robot</h1>
+<p class="muted">Robot menjawab pertanyaan pelanggan berdasarkan daftar ini (dari dataset toko). Ubah jawabannya di sini, robot langsung memakai jawaban terbaru.</p>
+{% if belum_terjawab %}
+<section class="panel">
+  <h2>Pertanyaan belum terjawab ({{ belum_terjawab|length }})</h2>
+  <p class="muted small">Robot belum punya jawaban resmi untuk ini. Klik "Jadikan FAQ" untuk langsung membuat jawabannya.</p>
+  <ul class="list">
+    {% for a in belum_terjawab %}
+    <li>
+      <span>{{ a.waktu.strftime("%d/%m %H:%M") }} · {{ a.ringkasan }}</span>
+      <button type="button" class="btn small outline tombol-jadikan-faq" data-pertanyaan="{{ a.ringkasan.split(': ', 1)[-1] }}">Jadikan FAQ</button>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+<details class="panel" id="tambah-faq"><summary><b>+ Tambah tanya jawab baru</b></summary>
+  <form method="post" action="/admin/faq/simpan">
+    <label>Pertanyaan <input name="pertanyaan" required></label>
+    <label>Jawaban <textarea name="jawaban" rows="3" required></textarea></label>
+    <input type="hidden" name="aktif" value="true">
+    <button class="btn">Tambah</button>
+  </form>
+</details>
+<script>
+  document.querySelectorAll('.tombol-jadikan-faq').forEach(b => b.addEventListener('click', () => {
+    document.querySelector('#tambah-faq [name=pertanyaan]').value = b.dataset.pertanyaan;
+    const d = document.getElementById('tambah-faq');
+    d.open = true;
+    d.scrollIntoView({ behavior: 'smooth' });
+  }));
+</script>
+{% for f in faq %}
+<form method="post" action="/admin/faq/simpan" class="panel faq-item {% if not f.aktif %}muted{% endif %}">
+  <input type="hidden" name="faq_id" value="{{ f.id }}">
+  <label>Pertanyaan <input name="pertanyaan" value="{{ f.pertanyaan }}" required></label>
+  <label>Jawaban <textarea name="jawaban" rows="3" required>{{ f.jawaban }}</textarea></label>
+  <div class="row-between">
+    <span></span>
+    <label class="check"><input type="checkbox" name="aktif" value="true" {% if f.aktif %}checked{% endif %}> Aktif</label>
+    <button class="btn small">Simpan</button>
+  </div>
+</form>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,14 @@
+{% for n in ("robot", "web", "admin") %}<span hidden data-ikon="{{ n }}">{{ ikon(n) }}</span>{% endfor %}
+<p class="muted kosong" {% if aktivitas %}hidden{% endif %}>Belum ada aktivitas. Coba tanya robot atau pesan lewat web.</p>
+<ul class="timeline">
+  {% for a in aktivitas %}
+  <li class="{{ a.sumber }}">
+    <span class="dot">{{ ikon(a.sumber) if a.sumber in ("robot", "web", "admin") else "•" }}</span>
+    <div>
+      <div class="meta">{{ a.waktu.strftime("%d/%m %H:%M") }} · <span class="tag {{ a.sumber }}">{{ a.sumber }}</span> · {{ LABEL_JENIS.get(a.jenis, a.jenis) }}</div>
+      <div>{{ a.ringkasan }}{% if a.pesanan_id %} · <a href="/admin/pesanan#p{{ a.pesanan_id }}">lihat pesanan</a>{% endif %}</div>
+      {% if a.detail %}<div class="detail">{{ a.detail }}</div>{% endif %}
+    </div>
+  </li>
+  {% endfor %}
+</ul>

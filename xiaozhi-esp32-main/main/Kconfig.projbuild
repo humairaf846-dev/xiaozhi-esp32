@@ -851,9 +851,9 @@ choice DISPLAY_LCD_TYPE
     config LCD_GC9A01_240X240
         bool "GC9A01 240*240 Circle"
     config LCD_NV3030B_240X320
-        bool "NV3030B, 分辨率240*320, IPS"
+        bool "NV3030B, resolution 240*320, IPS"
     config LCD_CUSTOM
-        bool "Custom LCD (自定义屏幕参数)"
+        bool "Custom LCD (custom screen parameters)"
 endchoice
 
 choice WK_BOARD_TYPE
@@ -863,9 +863,9 @@ choice WK_BOARD_TYPE
     help
         Board Type
     config BOARD_HAVE_MOTOR_CONTROL
-        bool "带电机驱动"
+        bool "With motor driver"
     config BOARD_NO_MOTOR_CONTROL
-        bool "不带电机驱动"
+        bool "Without motor driver"
 endchoice
 
 choice DISPLAY_CHD_ESP32S3_BOX
@@ -993,7 +993,7 @@ choice WAKE_WORD_TYPE
         bool "Wakenet model without AFE"
         depends on IDF_TARGET_ESP32C3 || IDF_TARGET_ESP32C5 || IDF_TARGET_ESP32C6 || (IDF_TARGET_ESP32 && SPIRAM)
         help
-            Support ESP32 C3、ESP32 C5 与 ESP32 C6, and (ESP32 with PSRAM)
+            Support ESP32 C3, ESP32 C5 and ESP32 C6, and (ESP32 with PSRAM)
 
     config USE_AFE_WAKE_WORD
         bool "Wakenet model with AFE"
@@ -1223,7 +1223,7 @@ menu "TAIJIPAI_S3_CONFIG"
         prompt "taiji-pi-S3 I2S Type"
         default TAIJIPAI_I2S_TYPE_STD
         help
-            I2S 类型选择
+            I2S type selection
         config TAIJIPAI_I2S_TYPE_STD
             bool "I2S Type STD"
         config TAIJIPAI_I2S_TYPE_PDM
@@ -1234,7 +1234,7 @@ menu "TAIJIPAI_S3_CONFIG"
     bool "Enable I2S 2 Slot"
     default y
     help
-        启动双声道
+        Enable dual channel (stereo)
 endmenu
 
 endmenu

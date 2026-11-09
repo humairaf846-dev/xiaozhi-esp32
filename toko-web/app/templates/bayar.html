@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Pembayaran pesanan #{{ pesanan.id }} - {{ toko.NAMA_TOKO }}{% endblock %}
+{% block content %}
+<div class="bayar">
+  <aside class="bayar-ringkas">
+    <span class="hero-kecil">Pesanan #{{ pesanan.id }}</span>
+    <h1>Pembayaran</h1>
+    {% for it in pesanan.item %}<div class="baris"><span>{{ it.jumlah }} kg {{ it.nama_produk }}</span><span>{{ it.subtotal|rupiah }}</span></div>{% endfor %}
+    {% if pesanan.diskon %}<div class="baris"><span>Diskon</span><span>&minus; {{ pesanan.diskon|rupiah }}</span></div>{% endif %}
+    {% if pesanan.pengiriman == "antar" %}<div class="baris"><span>Ongkir</span><span>{{ pesanan.ongkir|rupiah if pesanan.ongkir is not none else "sedang dihitung" }}</span></div>{% endif %}
+    <div class="baris total"><span>Total</span><b>{{ pesanan.total|rupiah }}</b></div>
+    {% if pesanan.estimasi_hari %}<p class="muted small">{{ ikon("jam") }} Estimasi tiba: <b>{{ pesanan.estimasi_hari }}</b></p>{% endif %}
+    <a class="psn-kembali" href="/pesanan/{{ bayar.kode }}">&larr; Lihat status pesanan</a>
+  </aside>
+
+  <section class="bayar-isi">
+    {% if baru %}<div class="alert info">Pesanan #{{ pesanan.id }} berhasil dibuat. Lanjutkan pembayaran di bawah ini.</div>{% endif %}
+    {% if error %}<div class="alert">{{ error }}</div>{% endif %}
+    {% if bayar.status == "lunas" %}
+      <div class="bayar-kabar lunas">{{ ikon("cek") }}<div><b>Pembayaran sudah diterima.</b><p>Terima kasih, jeruknya sedang kami siapkan.</p></div></div>
+    {% elif bayar.status == "menunggu" %}
+      <div class="bayar-kabar">{{ ikon("jam") }}<div><b>Bukti bayar sudah kami terima.</b><p>Kami cek dulu uangnya, lalu pesanan diproses.</p></div></div>
+      {% if not toko.WA_NOTIF_TOKEN %}<a class="btn big full" href="{{ wa_admin }}" target="_blank" rel="noopener">{{ ikon("chat") }} Kabari admin lewat WhatsApp</a>{% endif %}
+    {% elif pesanan.status == "batal" %}
+      <div class="bayar-kabar"><div><b>Pesanan ini sudah dibatalkan.</b></div></div>
+    {% elif not pesanan.bisa_dibayar %}
+      <div class="bayar-kabar">{{ ikon("jam") }}<div><b>Ongkir sedang kami hitung.</b><p>Kami kabari lewat WhatsApp ke {{ pesanan.telepon }}, lalu buka lagi halaman ini untuk membayar.</p></div></div>
+    {% else %}
+      {% if bayar.status == "ditolak" %}<div class="alert">Bukti sebelumnya belum sesuai. Silakan kirim lagi ya.</div>{% endif %}
+      <form method="post" enctype="multipart/form-data" class="bayar-form">
+        <div class="metode">
+          <label><input type="radio" name="metode" value="qris" checked><span>{{ ikon("qris") }} QRIS</span></label>
+          {% if toko.ada_rekening %}<label><input type="radio" name="metode" value="transfer"><span>{{ ikon("bayar") }} Transfer bank</span></label>{% endif %}
+          {% if pesanan.pengiriman == "ambil" %}<label><input type="radio" name="metode" value="cod"><span>{{ ikon("kirim") }} Bayar di tempat</span></label>{% endif %}
+        </div>
+        <div class="metode-isi" data-metode="qris">
+          <img src="{{ toko.aset('img/qris.png') }}" alt="Kode QRIS {{ toko.NAMA_TOKO }}">
+          <p class="muted small">Scan dengan dompet digital atau mobile banking, lalu isi nominal <b>{{ pesanan.total|rupiah }}</b>.</p>
+        </div>
+        {% if toko.ada_rekening %}
+        <div class="metode-isi" data-metode="transfer" hidden>
+          <div class="bank-pilih">
+            {% for b in toko.REKENING_BANKS %}
+            <label><input type="radio" name="bank" value="{{ b.bank }}" {% if loop.first %}checked{% endif %}><span>{{ b.bank }}</span></label>
+            {% endfor %}
+          </div>
+          {% for b in toko.REKENING_BANKS %}
+          <div class="rekening" data-bank="{{ b.bank }}" {% if not loop.first %}hidden{% endif %}>
+            <small>{{ b.bank }}</small>
+            <b class="no-rek">{{ b.nomor }}</b>
+            <span>a.n. {{ b.nama }}</span>
+            <button type="button" class="btn small outline" onclick="navigator.clipboard.writeText('{{ b.nomor }}'); this.textContent='Tersalin'">{{ ikon("salin") }} Salin nomor</button>
+          </div>
+          {% endfor %}
+          <p class="muted small">Transfer tepat <b>{{ pesanan.total|rupiah }}</b>.</p>
+        </div>
+        {% endif %}
+        {% if pesanan.pengiriman == "ambil" %}
+        <div class="metode-isi" data-metode="cod" hidden>
+          <p class="muted small">Bayar tunai <b>{{ pesanan.total|rupiah }}</b> langsung saat ambil jeruknya di toko. Tidak perlu upload bukti.</p>
+        </div>
+        {% endif %}
+        <label class="unggah" id="unggah-wrap">{{ ikon("unggah") }}<span id="unggah-nama">Pilih foto bukti bayar</span>
+          <input type="file" name="bukti" accept="image/jpeg,image/png,image/webp" id="bukti-input" required>
+        </label>
+        <button class="btn big full" id="tombol-bayar">Saya sudah bayar</button>
+      </form>
+      <script>
+        document.querySelectorAll('input[name=metode]').forEach(r => r.addEventListener('change', () => {
+          document.querySelectorAll('.metode-isi').forEach(d => { d.hidden = d.dataset.metode !== r.value; });
+          const cod = r.value === 'cod';
+          document.getElementById('unggah-wrap').hidden = cod;
+          document.getElementById('bukti-input').required = !cod;
+          document.getElementById('tombol-bayar').textContent = cod ? 'Pesan, bayar di tempat' : 'Saya sudah bayar';
+        }));
+        document.querySelectorAll('input[name=bank]').forEach(r => r.addEventListener('change', () => {
+          document.querySelectorAll('.rekening').forEach(d => { d.hidden = d.dataset.bank !== r.value; });
+        }));
+        document.querySelector('input[name=bukti]').addEventListener('change', e => {
+          document.getElementById('unggah-nama').textContent = e.target.files[0]?.name || 'Pilih foto bukti bayar';
+        });
+      </script>
+    {% endif %}
+  </section>
+</div>
+{% if baru %}<script>localStorage.removeItem("keranjang"); document.addEventListener("DOMContentLoaded", updateBadge);</script>{% endif %}
+{% endblock %}

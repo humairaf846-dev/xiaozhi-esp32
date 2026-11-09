@@ -28,7 +28,7 @@ McpServer::~McpServer() = default;
 void McpServer::AddCommonTools() {
     // *Important* To speed up the response time, we add the common tools to the beginning of
     // the tools list to utilize the prompt cache.
-    // **重要** 为了提升响应速度，我们把常用的工具放在前面，利用 prompt cache 的特性。
+    // **IMPORTANT** To improve response speed, frequently used tools are placed first to take advantage of prompt caching.
 
     // Backup the original tools list and restore it after adding the common tools.
     auto original_tools = std::move(tools_);
@@ -193,7 +193,7 @@ void McpServer::AddUserOnlyTools() {
 
                 ESP_LOGI(TAG, "Upload snapshot %u bytes to %s", jpeg_data.size(), url.c_str());
 
-                // 构造multipart/form-data请求体
+                // Build multipart/form-data request body
                 std::string boundary = "----ESP32_SCREEN_SNAPSHOT_BOUNDARY";
 
                 auto http = Board::GetInstance().GetNetwork()->CreateHttp(3);
@@ -210,7 +210,7 @@ void McpServer::AddUserOnlyTools() {
                     return std::nullopt;
                 };
                 {
-                    // 文件字段头部
+                    // File field header
                     std::string file_header;
                     file_header += "--" + boundary + "\r\n";
                     file_header +=
@@ -225,7 +225,7 @@ void McpServer::AddUserOnlyTools() {
                     }
                 }
 
-                // JPEG数据
+                // JPEG data
                 if (auto error = write_or_fail((const char*)jpeg_data.data(), jpeg_data.size());
                     error) {
                     http->Close();
@@ -233,7 +233,7 @@ void McpServer::AddUserOnlyTools() {
                 }
 
                 {
-                    // multipart尾部
+                    // multipart trailer
                     std::string multipart_footer;
                     multipart_footer += "\r\n--" + boundary + "--\r\n";
                     if (auto error =
@@ -534,7 +534,7 @@ void McpServer::GetToolsList(int id, const std::string& cursor, bool list_user_o
     std::string next_cursor = "";
 
     while (it != tools_.end()) {
-        // 如果我们还没有找到起始位置，继续搜索
+        // If we haven't found the start position yet, keep searching
         if (!found_cursor) {
             if ((*it)->name() == cursor) {
                 found_cursor = true;
@@ -549,10 +549,10 @@ void McpServer::GetToolsList(int id, const std::string& cursor, bool list_user_o
             continue;
         }
 
-        // 添加tool前检查大小
+        // Check size before adding tool
         std::string tool_json = (*it)->to_json() + ",";
         if (json.length() + tool_json.length() + 30 > max_payload_size) {
-            // 如果添加这个tool会超出大小限制，设置next_cursor并退出循环
+            // If adding this tool would exceed the size limit, set next_cursor and exit the loop
             next_cursor = (*it)->name();
             break;
         }
@@ -566,7 +566,7 @@ void McpServer::GetToolsList(int id, const std::string& cursor, bool list_user_o
     }
 
     if (json.back() == '[' && !tools_.empty()) {
-        // 如果没有添加任何tool，返回错误
+        // If no tool was added, return an error
         ESP_LOGE(TAG, "tools/list: Failed to add tool %s because of payload size limit",
                  next_cursor.c_str());
         ReplyError(id, "Failed to add tool " + next_cursor + " because of payload size limit",

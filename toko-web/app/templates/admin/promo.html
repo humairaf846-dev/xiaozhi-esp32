@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Kode Promo{% endblock %}
+{% block content %}
+<h1>Kode Promo</h1>
+{% if error %}<div class="alert">{{ error }}</div>{% endif %}
+<p class="muted">Pembeli memasukkan kode ini di keranjang sebelum "Kirim Pesanan". Kode referral pelanggan
+  (format otomatis <b>REF&lt;nomor pesanan&gt;</b>) terpisah dan tidak perlu dibuat di sini.</p>
+<details class="panel"><summary><b>+ Buat kode promo baru</b></summary>
+  <form method="post" action="/admin/promo/simpan">
+    <div class="two">
+      <label>Kode <input name="kode" required maxlength="30" placeholder="misal LEBARAN25" style="text-transform:uppercase"></label>
+      <label>Jenis
+        <select name="jenis">
+          <option value="nominal">Potongan tetap (Rp)</option>
+          <option value="persen">Persen (%)</option>
+        </select>
+      </label>
+    </div>
+    <div class="two">
+      <label>Nilai <input type="number" name="nilai" min="0" required placeholder="misal 10000 atau 10"></label>
+      <label>Kadaluarsa <small class="muted">(opsional)</small> <input type="date" name="kadaluarsa"></label>
+    </div>
+    <div class="two">
+      <label>Kuota pemakaian <input type="number" name="kuota" min="0" value="50"></label>
+      <label class="check" style="margin-top:28px"><input type="checkbox" name="tak_terbatas" value="true"> Tak terbatas (abaikan kuota)</label>
+    </div>
+    <input type="hidden" name="aktif" value="true">
+    <button class="btn">Buat kode</button>
+  </form>
+</details>
+{% if not promo %}<p class="muted">Belum ada kode promo.</p>{% endif %}
+{% for p in promo %}
+<form method="post" action="/admin/promo/simpan" class="panel faq-item {% if not p.aktif %}muted{% endif %}">
+  <input type="hidden" name="promo_id" value="{{ p.id }}">
+  <div class="two">
+    <label>Kode <input name="kode" value="{{ p.kode }}" required maxlength="30" style="text-transform:uppercase"></label>
+    <label>Jenis
+      <select name="jenis">
+        <option value="nominal" {% if p.jenis == "nominal" %}selected{% endif %}>Potongan tetap (Rp)</option>
+        <option value="persen" {% if p.jenis == "persen" %}selected{% endif %}>Persen (%)</option>
+      </select>
+    </label>
+  </div>
+  <div class="two">
+    <label>Nilai <input type="number" name="nilai" min="0" value="{{ p.nilai }}" required></label>
+    <label>Kadaluarsa <input type="date" name="kadaluarsa" value="{{ p.kadaluarsa.isoformat() if p.kadaluarsa else '' }}"></label>
+  </div>
+  <div class="two">
+    <label>Kuota <input type="number" name="kuota" min="0" value="{{ p.kuota }}"> <span class="muted small">sudah dipakai {{ p.dipakai }}x</span></label>
+    <label class="check" style="margin-top:28px"><input type="checkbox" name="tak_terbatas" value="true" {% if p.tak_terbatas %}checked{% endif %}> Tak terbatas</label>
+  </div>
+  <div class="row-between">
+    <span></span>
+    <label class="check"><input type="checkbox" name="aktif" value="true" {% if p.aktif %}checked{% endif %}> Aktif</label>
+    <button class="btn small">Simpan</button>
+  </div>
+</form>
+{% endfor %}
+{% endblock %}

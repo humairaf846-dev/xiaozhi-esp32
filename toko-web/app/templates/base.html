@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ toko.NAMA_TOKO }}{% endblock %}</title>
+  {% include "_kepala.html" %}
+  <script>window.TOKO = {minKg: {{ toko.MIN_KG }}, diskonMinKg: {{ toko.DISKON_MIN_KG }}, diskonPersen: {{ toko.DISKON_PERSEN }}};</script>
+  <script src="{{ toko.aset('cart.js') }}"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="{{ '/admin' if admin else '/toko' }}">{{ JERUK }}<span>{{ toko.NAMA_TOKO }}</span></a>
+    <nav>
+      {% if admin %}
+        <a href="/admin">Dashboard</a>
+        <a href="/admin/aktivitas">Aktivitas</a>
+        <a href="/admin/chat">Chat{% if chat_belum %} <span class="badge">{{ chat_belum }}</span>{% endif %}</a>
+        <a href="/admin/pesanan">Pesanan</a>
+        <a href="/admin/produk">Produk</a>
+        <a href="/admin/promo">Promo</a>
+        <a href="/admin/faq">FAQ Robot</a>
+        <a href="/admin/laporan">Laporan</a>
+        <form method="post" action="/admin/logout" class="inline"><button class="link">Keluar</button></form>
+      {% else %}
+        <a href="/toko#produk">Produk</a>
+        <button type="button" class="link" onclick="document.getElementById('qris-dialog').showModal()">Pembayaran</button>
+        <a href="/toko#lokasi">Lokasi</a>
+        <a href="/toko#faq">Tanya Jawab</a>
+        <a href="/pesanan-saya">Pesanan Saya</a>
+        <a href="/keranjang" class="cart-link">{{ ikon("keranjang") }} Keranjang <span id="cart-count" class="badge">0</span></a>
+      {% endif %}
+    </nav>
+  </header>
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="footer">
+    <b>{{ toko.NAMA_TOKO }}</b> · <a href="{{ toko.maps_link() }}" target="_blank" rel="noopener">{{ toko.ALAMAT_TOKO }}</a> · {{ toko.JAM_BUKA }} ·
+    <a href="{{ toko.wa_link() }}" target="_blank" rel="noopener">WhatsApp {{ toko.WHATSAPP }}</a>
+  </footer>
+  {% if not request.url.path.startswith("/admin") %}
+  <dialog id="qris-dialog" class="qris-dialog" aria-label="Pembayaran QRIS">
+    <form method="dialog"><button class="qris-tutup" aria-label="Tutup">×</button></form>
+    <h2>Pembayaran QRIS</h2>
+    <img src="/static/img/qris.png" alt="Kode QRIS {{ toko.NAMA_TOKO }}">
+    <p class="muted small">Scan dari aplikasi dompet digital atau mobile banking, isi nominal sesuai total dari kami, lalu kirim bukti bayarnya.</p>
+    {% if toko.ada_rekening %}
+    <div class="rek-ringkas"><b>Transfer bank</b>
+      {% for b in toko.REKENING_BANKS %}<p>{{ b.bank }} {{ b.nomor }} a.n. {{ b.nama }}</p>{% endfor %}
+    </div>
+    {% endif %}
+    <a class="btn teal full" href="{{ toko.wa_link('Halo, saya mau kirim bukti pembayaran') }}" target="_blank" rel="noopener">{{ ikon("chat") }} Kirim bukti bayar</a>
+  </dialog>
+
+  <button id="chat-tombol" class="chat-tombol" type="button" aria-label="Chat dengan toko">{{ ikon("chat") }} Chat<span id="chat-lencana" class="badge" hidden></span></button>
+  <section id="chat-panel" class="chat-panel" aria-label="Chat dengan toko" hidden>
+    <header><b>Chat dengan {{ toko.NAMA_TOKO }}</b><button id="chat-tutup" type="button" aria-label="Tutup chat">×</button></header>
+    <div id="chat-isi" class="chat-isi" aria-live="polite">
+      <div class="chat-msg admin">Hallo kakak-kakak dan abang-abang semua! Punya pertanyaan yang belum ada di daftar tanya jawab? Tulis apa saja di sini, admin akan membalas di chat ini.</div>
+    </div>
+    <form id="chat-form" class="chat-form-pembeli" data-toko="{{ toko.NAMA_TOKO }}"{% if not toko.WA_NOTIF_TOKEN %} data-wa="{{ toko.wa_link() }}"{% endif %}>
+      <div id="chat-identitas">
+        <input name="nama" maxlength="60" placeholder="Nama" aria-label="Nama" autocomplete="name">
+        <input name="telepon" maxlength="30" inputmode="tel" placeholder="No. WhatsApp (opsional)" aria-label="Nomor WhatsApp" autocomplete="tel">
+      </div>
+      <p id="chat-galat" class="danger small" hidden></p>
+      <div class="chat-form">
+        <input id="chat-teks" name="isi" maxlength="1000" required autocomplete="off" placeholder="Tulis pesan..." aria-label="Pesan">
+        <button class="btn">Kirim</button>
+      </div>
+      <a id="chat-wa" class="chat-wa" target="_blank" rel="noopener" hidden>{{ ikon("chat") }} Mau lebih cepat? Kabari admin lewat WhatsApp</a>
+    </form>
+  </section>
+  <script src="{{ toko.aset('chat.js') }}"></script>
+  {% endif %}
+</body>
+</html>

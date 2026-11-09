@@ -66,8 +66,8 @@ private:
     PropertyType type_;
     std::variant<bool, int, std::string> value_;
     bool has_default_value_;
-    std::optional<int> min_value_;  // 新增：整数最小值
-    std::optional<int> max_value_;  // 新增：整数最大值
+    std::optional<int> min_value_;  // new: integer minimum value
+    std::optional<int> max_value_;  // new: integer maximum value
     std::optional<size_t> max_length_;
 
 public:
@@ -360,7 +360,7 @@ public:
             owned_json.reset(std::get<cJSON*>(return_value));
         }
 
-        // 返回结果
+        // Return result
         CJsonUniquePtr result(cJSON_CreateObject());
         CJsonUniquePtr content(cJSON_CreateArray());
         if (result == nullptr || content == nullptr) {
