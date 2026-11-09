@@ -7,6 +7,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR / 'toko.db'}")
+# Hosts like Railway/Heroku hand out a bare "postgres://" or "postgresql://" URL, which SQLAlchemy
+# would try to open with psycopg2 (not installed here). Point it at the psycopg v3 driver we ship instead.
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = "postgresql+psycopg://" + DATABASE_URL[len("postgres://"):]
+elif DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = "postgresql+psycopg://" + DATABASE_URL[len("postgresql://"):]
 NAMA_TOKO = os.getenv("NAMA_TOKO", "Yufasya Family")
 WHATSAPP = os.getenv("WHATSAPP", "089527905336")
 ALAMAT_TOKO = os.getenv("ALAMAT_TOKO", "Pasar Pariaman, depan stasiun kereta api")
