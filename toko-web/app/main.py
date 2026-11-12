@@ -466,7 +466,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
     return render(request, "admin/dashboard.html", hari_ini=hari_ini, bulan_ini=bulan_ini, harian=harian,
                   maks=maks, perlu=perlu, menipis=services.stok_menipis(db), aktivitas=aktivitas,
                   id_terakhir=aktivitas[0].id if aktivitas else 0, kelompok=services.aktivitas_per_pembeli(db),
-                  robot_hari_ini=services.aktivitas_robot_hari_ini(db), robot=status_robot(), xiaozhi=status_xiaozhi(),
+                  robot_hari_ini=services.aktivitas_robot_hari_ini(db), robot=status_gabungan(),
                   robot_dipakai=robot_terakhir_dipakai(db))
 
 
@@ -509,6 +509,17 @@ def status_robot() -> dict:
     return {"kode": "aktif", "teks": "Robot menyala · " + LABEL_STATUS_ROBOT.get(status, "aktif")}
 
 
+def status_gabungan() -> dict:
+    """One badge for the dashboard: the robot's own state, except when the web<->Airamon link
+    itself is down too - then say so, since a silent robot alone wouldn't explain why."""
+    robot = status_robot()
+    if robot["kode"] == "aktif":
+        return robot
+    if status_xiaozhi()["kode"] != "aktif":
+        return {"kode": robot["kode"], "teks": "Server web dan robot sama-sama belum tersambung ke layanan Airamon"}
+    return robot
+
+
 def robot_terakhir_dipakai(db: Session) -> str:
     terakhir = services.aktivitas_robot_terakhir(db)
     return f"terakhir dipakai {terakhir:%d/%m %H:%M}" if terakhir else "belum pernah dipakai pelanggan"
@@ -545,8 +556,7 @@ def api_live(request: Request, setelah: int = 0, db: Session = Depends(get_db)):
                  "kg": hari_ini["total_kg"], "web": hari_ini["dari_web"], "robot": hari_ini["dari_robot"],
                  "robot_hari_ini": services.aktivitas_robot_hari_ini(db), "robot_dipakai": robot_terakhir_dipakai(db),
                  "omzet_bulan": services.rupiah(bulan_ini["omzet"]), "kg_bulan": bulan_ini["total_kg"]},
-        "robot": status_robot(),
-        "xiaozhi": status_xiaozhi(),
+        "robot": status_gabungan(),
         "perlu_html": perlu_html,
         "pembeli_html": pembeli_html,
         "jumlah_perlu": db.scalar(select(func.count(Pesanan.id)).where(Pesanan.status.in_(["baru", "menunggu_bayar"]))),

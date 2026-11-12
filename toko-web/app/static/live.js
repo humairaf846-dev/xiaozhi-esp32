@@ -74,8 +74,6 @@
         set("jumlah-perlu", d.jumlah_perlu);
         const rs = document.getElementById("robot-status");
         if (rs) { rs.className = "robot-status " + d.robot.kode; rs.querySelector("span").textContent = d.robot.teks; }
-        const xs = document.getElementById("xiaozhi-status");
-        if (xs) { xs.className = "robot-status " + d.xiaozhi.kode; xs.querySelector("span").textContent = d.xiaozhi.teks; }
         if (d.perlu_html !== null) {
           const p = document.getElementById("perlu");
           // Don't replace the list while the owner is typing a shipping cost.
